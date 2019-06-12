@@ -531,7 +531,10 @@ public class Domain {
       }
       testAppUrl.append(webappName).append("/");
       // curl cmd to call webapp
-      StringBuffer curlCmd = new StringBuffer("curl --silent --noproxy '*' ");
+      StringBuffer curlCmd = new StringBuffer("curl --silent ");
+      if (!BaseTest.SHARED_CLUSTER) {
+        curlCmd.append("--noproxy '*' ");
+      }
       curlCmd
           .append(" -H 'host: ")
           .append(domainUid)
