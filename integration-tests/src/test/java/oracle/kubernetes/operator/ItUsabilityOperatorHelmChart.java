@@ -233,13 +233,22 @@ public class ItUsabilityOperatorHelmChart extends BaseTest {
           "FAILURE: Helm installs operator with not preexisted service account ");
 
     } catch (Exception ex) {
-      String cmdLb = "helm list --failed " + "  | grep " + oprelease;
+      String cmdLb = "helm list --failed ";
       logger.info("Executing cmd " + cmdLb);
       ExecResult result = ExecCommand.exec(cmdLb);
       if (result.exitValue() != 0) {
         throw new RuntimeException(
-            "FAILURE: Helm installs operator with not preexisted service account ");
+            "FAILURE: Helm list failed ");
       }
+      if (result.stdout().contains(oprelease)) {
+        throw new RuntimeException(
+            "FAILURE: Helm installs operator with not preexisted service account "
+            + ". Cmd returned "
+            + result.stdout()
+            + "\n"
+            + result.stderr());
+      }
+
       // create operator service account
       String serviceAccount = (String) operator.getOperatorMap().get("serviceAccount");
       String operatorNS = (String) operator.getOperatorMap().get("namespace");
