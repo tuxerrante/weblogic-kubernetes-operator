@@ -35,7 +35,7 @@ public class DomainSpec extends BaseConfiguration {
   @Description(
       "Domain unique identifier. Must be unique across the Kubernetes cluster. Not required."
           + " Defaults to the value of metadata.name")
-  @Pattern("^[a-z0-9_.]{1,253}$")
+  @Pattern("^[a-z0-9-.]{1,253}$")
   private String domainUID;
 
   /**
