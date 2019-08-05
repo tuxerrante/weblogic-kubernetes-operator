@@ -4,15 +4,14 @@
 
 package oracle.kubernetes.operator;
 
-import static java.net.HttpURLConnection.HTTP_GONE;
+import java.lang.reflect.Method;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.util.Watch;
-import java.lang.reflect.Method;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
 import oracle.kubernetes.operator.TuningParameters.WatchTuning;
 import oracle.kubernetes.operator.builders.WatchBuilder;
 import oracle.kubernetes.operator.builders.WatchI;
@@ -20,6 +19,8 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.MessageKeys;
 import oracle.kubernetes.operator.watcher.WatchListener;
+
+import static java.net.HttpURLConnection.HTTP_GONE;
 
 /**
  * This class handles the Watching interface and drives the watch support for a specific type of
@@ -70,6 +71,10 @@ abstract class Watcher<T> {
       WatchListener<T> listener) {
     this(resourceVersion, tuning, stopping);
     this.listener = listener;
+  }
+
+  private static boolean isNullOrEmptyString(String s) {
+    return s == null || s.equals("");
   }
 
   /** Waits for this watcher's thread to exit. For unit testing only. */
@@ -143,7 +148,7 @@ abstract class Watcher<T> {
             new WatchBuilder()
                 .withResourceVersion(resourceVersion.toString())
                 .withTimeoutSeconds(tuning.watchLifetime))) {
-      while (watch.hasNext()) {
+      while (hasNext(watch)) {
         Watch.Response<T> item = watch.next();
 
         if (isStopping()) {
@@ -162,6 +167,15 @@ abstract class Watcher<T> {
     } catch (Throwable ex) {
       LOGGER.warning(MessageKeys.EXCEPTION, ex);
     }
+  }
+
+  private boolean hasNext(WatchI<T> watch) {
+    try {
+      return watch.hasNext();
+    } catch (Throwable ex) {
+      // no-op on exception during hasNext
+    }
+    return false;
   }
 
   /**
@@ -191,7 +205,7 @@ abstract class Watcher<T> {
       // The kubernetes client parsing logic can mistakenly parse a status as a type
       // with similar fields, such as V1ConfigMap. In this case, the actual status is
       // not available to our layer, so respond defensively by resetting resource version.
-      resourceVersion = 0l;
+      resourceVersion = 0L;
     } else if (status.getCode() == HTTP_GONE) {
       resourceVersion = computeNextResourceVersionFromMessage(status);
     }
@@ -211,7 +225,7 @@ abstract class Watcher<T> {
         }
       }
     }
-    return 0l;
+    return 0L;
   }
 
   /**
@@ -253,9 +267,5 @@ abstract class Watcher<T> {
     } else if (newResourceVersion > resourceVersion) {
       resourceVersion = newResourceVersion;
     }
-  }
-
-  private static boolean isNullOrEmptyString(String s) {
-    return s == null || s.equals("");
   }
 }

@@ -4,17 +4,20 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1Service;
 import io.kubernetes.client.util.Yaml;
-import java.util.function.Function;
 import org.apache.commons.codec.digest.DigestUtils;
 
 /** Annotates pods, services with details about the Domain instance and checks these annotations. */
 public class AnnotationHelper {
-  private static final boolean DEBUG = false;
   static final String SHA256_ANNOTATION = "weblogic.sha256";
+  private static final boolean DEBUG = false;
   private static final String HASHED_STRING = "hashedString";
   private static Function<Object, String> HASH_FUNCTION = o -> DigestUtils.sha256Hex(Yaml.dump(o));
 
@@ -58,15 +61,31 @@ public class AnnotationHelper {
     return service;
   }
 
-  static String getDebugString(V1Pod pod) {
-    return pod.getMetadata().getAnnotations().get(HASHED_STRING);
-  }
-
   static String getHash(V1Pod pod) {
-    return pod.getMetadata().getAnnotations().get(SHA256_ANNOTATION);
+    return getAnnotation(pod.getMetadata(), AnnotationHelper::getSha256Annotation);
   }
 
   static String getHash(V1Service service) {
-    return service.getMetadata().getAnnotations().get(SHA256_ANNOTATION);
+    return getAnnotation(service.getMetadata(), AnnotationHelper::getSha256Annotation);
+  }
+
+  static String getDebugString(V1Pod pod) {
+    return getAnnotation(pod.getMetadata(), AnnotationHelper::getDebugHashAnnotation);
+  }
+
+  private static String getAnnotation(
+      V1ObjectMeta metadata, Function<Map<String, String>, String> annotationGetter) {
+    return Optional.ofNullable(metadata)
+        .map(V1ObjectMeta::getAnnotations)
+        .map(annotationGetter)
+        .orElse("");
+  }
+
+  private static String getDebugHashAnnotation(Map<String, String> annotations) {
+    return annotations.get(HASHED_STRING);
+  }
+
+  private static String getSha256Annotation(Map<String, String> annotations) {
+    return annotations.get(SHA256_ANNOTATION);
   }
 }

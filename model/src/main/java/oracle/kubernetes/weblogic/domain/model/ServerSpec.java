@@ -4,6 +4,10 @@
 
 package oracle.kubernetes.weblogic.domain.model;
 
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Nonnull;
+
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1LocalObjectReference;
@@ -12,9 +16,6 @@ import io.kubernetes.client.models.V1ResourceRequirements;
 import io.kubernetes.client.models.V1SecurityContext;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nonnull;
 
 public interface ServerSpec {
   String getImage();
@@ -84,6 +85,9 @@ public interface ServerSpec {
   @Nonnull
   ProbeTuning getReadinessProbe();
 
+  @Nonnull
+  Shutdown getShutdown();
+
   /**
    * Returns the labels applied to the pod.
    *
@@ -99,6 +103,14 @@ public interface ServerSpec {
    */
   @Nonnull
   Map<String, String> getPodAnnotations();
+
+  /**
+   * Returns true if the per-server instance service should be created for this server instance even
+   * if the pod for this server instance is not running.
+   *
+   * @return true, if the per-server instance service should be pre-created
+   */
+  Boolean isPrecreateServerService();
 
   /**
    * Returns the labels applied to the service.

@@ -4,31 +4,29 @@
 
 package oracle.kubernetes.weblogic.domain.model;
 
-import static oracle.kubernetes.operator.KubernetesConstants.ALWAYS_IMAGEPULLPOLICY;
-import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_IMAGE;
-import static oracle.kubernetes.operator.KubernetesConstants.IFNOTPRESENT_IMAGEPULLPOLICY;
-
-import io.kubernetes.client.models.V1EnvVar;
-import io.kubernetes.client.models.V1LocalObjectReference;
-import io.kubernetes.client.models.V1PodSecurityContext;
-import io.kubernetes.client.models.V1ResourceRequirements;
-import io.kubernetes.client.models.V1SecurityContext;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+
+import io.kubernetes.client.models.V1LocalObjectReference;
+import io.kubernetes.client.models.V1PodSecurityContext;
+import io.kubernetes.client.models.V1ResourceRequirements;
+import io.kubernetes.client.models.V1SecurityContext;
 import oracle.kubernetes.operator.KubernetesConstants;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import static oracle.kubernetes.operator.KubernetesConstants.ALWAYS_IMAGEPULLPOLICY;
+import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_IMAGE;
+import static oracle.kubernetes.operator.KubernetesConstants.IFNOTPRESENT_IMAGEPULLPOLICY;
+
 /** Represents the effective configuration for a server, as seen by the operator runtime. */
 @SuppressWarnings("WeakerAccess")
 public abstract class ServerSpecBase implements ServerSpec {
 
-  private static final String ADMIN_MODE_FLAG = "-Dweblogic.management.startupMode=ADMIN";
   protected DomainSpec domainSpec;
 
   public ServerSpecBase(DomainSpec domainSpec) {
@@ -62,17 +60,6 @@ public abstract class ServerSpecBase implements ServerSpec {
     return domainSpec.getImagePullSecrets();
   }
 
-  protected List<V1EnvVar> withStateAdjustments(List<V1EnvVar> env) {
-    if (!getDesiredState().equals("ADMIN")) {
-      return env;
-    } else {
-      List<V1EnvVar> adjustedEnv = new ArrayList<>(env);
-      V1EnvVar var = getOrCreateVar(adjustedEnv, "JAVA_OPTIONS");
-      var.setValue(prepend(var.getValue(), ADMIN_MODE_FLAG));
-      return adjustedEnv;
-    }
-  }
-
   @Override
   public String getConfigOverrides() {
     return domainSpec.getConfigOverrides();
@@ -81,23 +68,6 @@ public abstract class ServerSpecBase implements ServerSpec {
   @Override
   public List<String> getConfigOverrideSecrets() {
     return domainSpec.getConfigOverrideSecrets();
-  }
-
-  @SuppressWarnings("SameParameterValue")
-  private V1EnvVar getOrCreateVar(List<V1EnvVar> env, String name) {
-    for (V1EnvVar var : env) {
-      if (var.getName().equals(name)) {
-        return var;
-      }
-    }
-    V1EnvVar var = new V1EnvVar().name(name);
-    env.add(var);
-    return var;
-  }
-
-  @SuppressWarnings("SameParameterValue")
-  private String prepend(String value, String prefix) {
-    return value == null ? prefix : value.contains(prefix) ? value : prefix + ' ' + value;
   }
 
   @Override
@@ -110,6 +80,12 @@ public abstract class ServerSpecBase implements ServerSpec {
   @Nonnull
   public ProbeTuning getReadinessProbe() {
     return new ProbeTuning();
+  }
+
+  @Override
+  @Nonnull
+  public Shutdown getShutdown() {
+    return new Shutdown();
   }
 
   @Override

@@ -1,12 +1,13 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
 
+import java.util.List;
+
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1LocalObjectReference;
-import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -87,12 +88,6 @@ public class ClusteredServerConfig extends ServerConfig {
   }
 
   @Override
-  public ClusteredServerConfig withStartedServerState(String startedServerState) {
-    super.withStartedServerState(startedServerState);
-    return this;
-  }
-
-  @Override
   public ClusteredServerConfig withRestartedLabel(String restartedLabel) {
     super.withRestartedLabel(restartedLabel);
     return this;
@@ -125,32 +120,6 @@ public class ClusteredServerConfig extends ServerConfig {
   @Override
   public ClusteredServerConfig withImagePullSecrets(List<V1LocalObjectReference> imagePullSecrets) {
     super.withImagePullSecrets(imagePullSecrets);
-    return this;
-  }
-
-  @Override
-  public ClusteredServerConfig withShutdownPolicy(String shutdownPolicy) {
-    super.withShutdownPolicy(shutdownPolicy);
-    return this;
-  }
-
-  @Override
-  public ClusteredServerConfig withGracefulShutdownTimeout(int gracefulShutdownTimeout) {
-    super.withGracefulShutdownTimeout(gracefulShutdownTimeout);
-    return this;
-  }
-
-  @Override
-  public ClusteredServerConfig withGracefulShutdownIgnoreSessions(
-      boolean gracefulShutdownIgnoreSessions) {
-    super.withGracefulShutdownIgnoreSessions(gracefulShutdownIgnoreSessions);
-    return this;
-  }
-
-  @Override
-  public ClusteredServerConfig withGracefulShutdownWaitForSessions(
-      boolean gracefulShutdownWaitForSessions) {
-    super.withGracefulShutdownWaitForSessions(gracefulShutdownWaitForSessions);
     return this;
   }
 

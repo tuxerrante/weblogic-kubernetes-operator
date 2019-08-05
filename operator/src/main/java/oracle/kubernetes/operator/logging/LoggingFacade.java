@@ -1,9 +1,10 @@
-// Copyright 2017, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.logging;
 
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -13,9 +14,9 @@ import java.util.logging.Logger;
 /** Centralized logging for the operator. */
 public class LoggingFacade {
 
-  private final Logger logger;
   public static final String TRACE = "OWLS-KO-TRACE: ";
-  protected final String CLASS = LoggingFacade.class.getName();
+  protected static final String CLASS = LoggingFacade.class.getName();
+  private final Logger logger;
 
   public LoggingFacade(Logger logger) {
     this.logger = logger;
@@ -34,14 +35,48 @@ public class LoggingFacade {
   }
 
   /**
-   * Sets the level at which the underlying Logger operates. This should not be called in the
-   * general case; levels should be set via OOB configuration (a configuration file exposed by the
-   * logging implementation, management API, etc).
+   * Converts an array to a loggable string.
    *
-   * @param newLevel Level to set
+   * @param value the object to log
+   * @param password true if the value is a password that should not be logged
+   * @return a loggable string
    */
-  public void setLevel(Level newLevel) {
-    logger.setLevel(newLevel);
+  public static Object convertArraysForLogging(Object value, boolean password) {
+    // Don't log passwords.
+    if (password) {
+      return "***";
+    }
+
+    Object result = value;
+    if (value != null) {
+      // Convert any object arrays such as String arrays.
+      if (Object[].class.isAssignableFrom(value.getClass())) {
+        Object[] array = Object[].class.cast(value);
+        result = Arrays.toString(array);
+      } else if (value.getClass().isArray()) {
+        // Any other arrays are primitive arrays which must be cast to
+        // the correct primitive type.
+        Class<?> type = value.getClass().getComponentType();
+        if (type == boolean.class) {
+          result = Arrays.toString((boolean[]) value);
+        } else if (type == byte.class) {
+          result = Arrays.toString((byte[]) value);
+        } else if (type == char.class) {
+          result = Arrays.toString((char[]) value);
+        } else if (type == double.class) {
+          result = Arrays.toString((double[]) value);
+        } else if (type == float.class) {
+          result = Arrays.toString((float[]) value);
+        } else if (type == int.class) {
+          result = Arrays.toString((int[]) value);
+        } else if (type == long.class) {
+          result = Arrays.toString((long[]) value);
+        } else if (type == short.class) {
+          result = Arrays.toString((short[]) value);
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -249,6 +284,17 @@ public class LoggingFacade {
   }
 
   /**
+   * Sets the level at which the underlying Logger operates. This should not be called in the
+   * general case; levels should be set via OOB configuration (a configuration file exposed by the
+   * logging implementation, management API, etc).
+   *
+   * @param newLevel Level to set
+   */
+  public void setLevel(Level newLevel) {
+    logger.setLevel(newLevel);
+  }
+
+  /**
    * Returns the name of the underlying logger.
    *
    * @return a String with the name of the logger
@@ -287,6 +333,20 @@ public class LoggingFacade {
    */
   public void info(String msg, Object... params) {
     if (isInfoEnabled()) {
+      CallerDetails details = inferCaller();
+      logger.logp(Level.INFO, details.clazz, details.method, msg, params);
+    }
+  }
+
+  /**
+   * Logs a message which requires parameters at the INFO level with a logging filter applied.
+   *
+   * @param loggingFilter LoggingFilter to be applied, can be null
+   * @param msg the message to log
+   * @param params varargs list of objects to include in the log message
+   */
+  public void info(LoggingFilter loggingFilter, String msg, Object... params) {
+    if (isInfoEnabled() && LoggingFilter.canLog(loggingFilter, msg)) {
       CallerDetails details = inferCaller();
       logger.logp(Level.INFO, details.clazz, details.method, msg, params);
     }
@@ -450,6 +510,20 @@ public class LoggingFacade {
   }
 
   /**
+   * Logs a message which requires parameters at the SEVERE level with a logging filter applied.
+   *
+   * @param loggingFilter LoggingFilter to be applied, can be null
+   * @param msg the message to log
+   * @param params varargs list of objects to include in the log message
+   */
+  public void severe(LoggingFilter loggingFilter, String msg, Object... params) {
+    if (isSevereEnabled() && LoggingFilter.canLog(loggingFilter, msg)) {
+      CallerDetails details = inferCaller();
+      logger.logp(Level.SEVERE, details.clazz, details.method, msg, params);
+    }
+  }
+
+  /**
    * Logs a message which accompanies a Throwable at the SEVERE level.
    *
    * @param msg the message to log
@@ -457,6 +531,20 @@ public class LoggingFacade {
    */
   public void severe(String msg, Throwable thrown) {
     if (isSevereEnabled()) {
+      CallerDetails details = inferCaller();
+      logger.logp(Level.SEVERE, details.clazz, details.method, msg, thrown);
+    }
+  }
+
+  /**
+   * Logs a message which accompanies a Throwable at the SEVERE level with a logging filter applied.
+   *
+   * @param loggingFilter LoggingFilter to be applied, can be null
+   * @param msg the message to log
+   * @param thrown an Exception to include in the logged message
+   */
+  public void severe(LoggingFilter loggingFilter, String msg, Throwable thrown) {
+    if (isSevereEnabled() && LoggingFilter.canLog(loggingFilter, msg)) {
       CallerDetails details = inferCaller();
       logger.logp(Level.SEVERE, details.clazz, details.method, msg, thrown);
     }
@@ -500,6 +588,20 @@ public class LoggingFacade {
   }
 
   /**
+   * Logs a message which requires parameters at the WARNING level with a logging filter applied.
+   *
+   * @param loggingFilter LoggingFilter to be applied, can be null
+   * @param msg the message to log
+   * @param params varargs list of objects to include in the log message
+   */
+  public void warning(LoggingFilter loggingFilter, String msg, Object... params) {
+    if (isWarningEnabled() && LoggingFilter.canLog(loggingFilter, msg)) {
+      CallerDetails details = inferCaller();
+      logger.logp(Level.WARNING, details.clazz, details.method, msg, params);
+    }
+  }
+
+  /**
    * Logs a message which accompanies a Throwable at the WARNING level.
    *
    * @param msg the message to log
@@ -532,48 +634,18 @@ public class LoggingFacade {
   }
 
   /**
-   * Converts an array to a loggable string.
+   * Returns a formatted message.
    *
-   * @param value the object to log
-   * @param password true if the value is a password that should not be logged
-   * @return a loggable string
+   * @param msg the message to be formatted, which is key to the resource bundle
+   * @param args parameters to the message
+   * @return A formatted message
    */
-  public static Object convertArraysForLogging(Object value, boolean password) {
-    // Don't log passwords.
-    if (password) {
-      return "***";
+  public String getFormattedMessage(String msg, Object... args) {
+    try {
+      return MessageFormat.format(logger.getResourceBundle().getString(msg), args);
+    } catch (Exception ex) {
+      return msg;
     }
-
-    Object result = value;
-    if (value != null) {
-      // Convert any object arrays such as String arrays.
-      if (Object[].class.isAssignableFrom(value.getClass())) {
-        Object[] array = Object[].class.cast(value);
-        result = Arrays.toString(array);
-      } else if (value.getClass().isArray()) {
-        // Any other arrays are primitive arrays which must be cast to
-        // the correct primitive type.
-        Class<?> type = value.getClass().getComponentType();
-        if (type == boolean.class) {
-          result = Arrays.toString((boolean[]) value);
-        } else if (type == byte.class) {
-          result = Arrays.toString((byte[]) value);
-        } else if (type == char.class) {
-          result = Arrays.toString((char[]) value);
-        } else if (type == double.class) {
-          result = Arrays.toString((double[]) value);
-        } else if (type == float.class) {
-          result = Arrays.toString((float[]) value);
-        } else if (type == int.class) {
-          result = Arrays.toString((int[]) value);
-        } else if (type == long.class) {
-          result = Arrays.toString((long[]) value);
-        } else if (type == short.class) {
-          result = Arrays.toString((short[]) value);
-        }
-      }
-    }
-    return result;
   }
 
   /**

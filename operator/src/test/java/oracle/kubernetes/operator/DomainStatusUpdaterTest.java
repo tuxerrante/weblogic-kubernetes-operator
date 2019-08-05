@@ -4,22 +4,9 @@
 
 package oracle.kubernetes.operator;
 
-import static oracle.kubernetes.operator.DomainConditionMatcher.hasCondition;
-import static oracle.kubernetes.operator.DomainStatusUpdater.SERVERS_READY_REASON;
-import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
-import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
-import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
-import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
-import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
-import static oracle.kubernetes.operator.WebLogicConstants.STANDBY_STATE;
-import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Available;
-import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Failed;
-import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Progressing;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
 import com.meterware.simplestub.Memento;
@@ -27,14 +14,10 @@ import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodStatus;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import oracle.kubernetes.TestUtils;
 import oracle.kubernetes.operator.helpers.AsyncCallTestSupport;
 import oracle.kubernetes.operator.helpers.BodyMatcher;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.helpers.ServerKubernetesObjects;
 import oracle.kubernetes.operator.utils.RandomStringGenerator;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -52,13 +35,30 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static oracle.kubernetes.operator.DomainConditionMatcher.hasCondition;
+import static oracle.kubernetes.operator.DomainStatusUpdater.SERVERS_READY_REASON;
+import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
+import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
+import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
+import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
+import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
+import static oracle.kubernetes.operator.WebLogicConstants.STANDBY_STATE;
+import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Available;
+import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Failed;
+import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Progressing;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+
 public class DomainStatusUpdaterTest {
   private static final String NS = "namespace";
   private static final String NAME = "name";
+  private final TerminalStep endStep = new TerminalStep();
+  private final WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
   private AsyncCallTestSupport testSupport = new AsyncCallTestSupport();
   private List<Memento> mementos = new ArrayList<>();
-  private final TerminalStep endStep = new TerminalStep();
-
   private Domain domain =
       new Domain()
           .withMetadata(new V1ObjectMeta().namespace(NS).name(NAME))
@@ -66,9 +66,8 @@ public class DomainStatusUpdaterTest {
   private DomainPresenceInfo info = new DomainPresenceInfo(domain);
   private Domain recordedDomain;
   private RandomStringGenerator generator = new RandomStringGenerator();
-  private String reason = generator.getUniqueString();
-  private final WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
   private final String message = generator.getUniqueString();
+  private String reason = generator.getUniqueString();
   private RuntimeException failure = new RuntimeException(message);
 
   @Before
@@ -78,8 +77,8 @@ public class DomainStatusUpdaterTest {
 
     domain.setStatus(new DomainStatus());
 
-    info.getServers().putIfAbsent("server1", createServerKubernetesObjects("server1"));
-    info.getServers().putIfAbsent("server2", createServerKubernetesObjects("server2"));
+    defineServerPod("server1");
+    defineServerPod("server2");
     testSupport.addDomainPresenceInfo(info);
     testSupport
         .createCannedResponse("replaceDomain")
@@ -96,19 +95,6 @@ public class DomainStatusUpdaterTest {
 
     this.recordedDomain = (Domain) domain;
     return true;
-  }
-
-  class RecordBody implements BodyMatcher {
-    @Override
-    public boolean matches(Object actualBody) {
-      return recordBody(actualBody);
-    }
-  }
-
-  private ServerKubernetesObjects createServerKubernetesObjects(String serverName) {
-    ServerKubernetesObjects sko = new ServerKubernetesObjects();
-    sko.getPod().set(new V1Pod().metadata(createPodMetadata(serverName)).spec(new V1PodSpec()));
-    return sko;
   }
 
   private V1ObjectMeta createPodMetadata(String serverName) {
@@ -131,6 +117,13 @@ public class DomainStatusUpdaterTest {
         ImmutableMap.of("server1", overallHealth("health1"), "server2", overallHealth("health2")));
     setClusterAndNodeName(getPod("server1"), "clusterA", "node1");
     setClusterAndNodeName(getPod("server2"), "clusterB", "node2");
+
+    WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
+    configSupport.addWlsServer("server1");
+    configSupport.addWlsCluster("clusterA", "server1");
+    configSupport.addWlsServer("server2");
+    configSupport.addWlsCluster("clusterB", "server2");
+    testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
 
     testSupport.runSteps(new DomainStatusUpdater.StatusUpdateStep(endStep));
 
@@ -171,7 +164,7 @@ public class DomainStatusUpdaterTest {
   }
 
   private V1Pod getPod(String serverName) {
-    return info.getServers().get(serverName).getPod().get();
+    return info.getServerPod(serverName);
   }
 
   @Test
@@ -237,6 +230,11 @@ public class DomainStatusUpdaterTest {
         SERVER_HEALTH_MAP, ImmutableMap.of("server1", overallHealth("health1")));
     setClusterAndNodeName(getPod("server1"), "clusterA", "node1");
 
+    WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
+    configSupport.addWlsServer("server1");
+    configSupport.addWlsCluster("clusterA", "server1");
+    testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
+
     testSupport.runSteps(new DomainStatusUpdater.StatusUpdateStep(endStep));
 
     assertThat(
@@ -252,6 +250,10 @@ public class DomainStatusUpdaterTest {
 
   @Test
   public void whenStatusUnchanged_statusStepDoesNotUpdateDomain() {
+    info = new DomainPresenceInfo(domain);
+    testSupport.addDomainPresenceInfo(info);
+    defineServerPod("server1");
+
     domain.setStatus(
         new DomainStatus()
             .withServers(
@@ -266,7 +268,6 @@ public class DomainStatusUpdaterTest {
                 new DomainCondition(Available)
                     .withStatus("True")
                     .withReason(SERVERS_READY_REASON)));
-    info.getServers().remove("server2");
     testSupport.addToPacket(SERVER_STATE_MAP, ImmutableMap.of("server1", RUNNING_STATE));
     testSupport.addToPacket(
         SERVER_HEALTH_MAP, ImmutableMap.of("server1", overallHealth("health1")));
@@ -288,6 +289,13 @@ public class DomainStatusUpdaterTest {
   public void whenDomainHasOneCluster_statusReplicaCountShowsServersInThatCluster() {
     defineCluster("cluster1", "server1", "server2", "server3");
 
+    WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
+    configSupport.addWlsServer("server1");
+    configSupport.addWlsServer("server2");
+    configSupport.addWlsServer("server3");
+    configSupport.addWlsCluster("cluster1", "server1", "server2", "server3");
+    testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
+
     testSupport.runSteps(new DomainStatusUpdater.StatusUpdateStep(endStep));
 
     assertThat(recordedDomain.getStatus().getReplicas(), equalTo(3));
@@ -298,6 +306,21 @@ public class DomainStatusUpdaterTest {
     defineCluster("cluster1", "server1", "server2", "server3");
     defineCluster("cluster2", "server4", "server5", "server6", "server7");
     defineCluster("cluster3", "server8", "server9");
+
+    WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
+    configSupport.addWlsServer("server1");
+    configSupport.addWlsServer("server2");
+    configSupport.addWlsServer("server3");
+    configSupport.addWlsCluster("cluster1", "server1", "server2", "server3");
+    configSupport.addWlsServer("server4");
+    configSupport.addWlsServer("server5");
+    configSupport.addWlsServer("server6");
+    configSupport.addWlsServer("server7");
+    configSupport.addWlsCluster("cluster2", "server4", "server5", "server6", "server7");
+    configSupport.addWlsServer("server8");
+    configSupport.addWlsServer("server9");
+    configSupport.addWlsCluster("cluster3", "server8", "server9");
+    testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
 
     testSupport.runSteps(new DomainStatusUpdater.StatusUpdateStep(endStep));
 
@@ -330,6 +353,13 @@ public class DomainStatusUpdaterTest {
         .addCondition(
             new DomainCondition(Available).withStatus("True").withReason(SERVERS_READY_REASON));
     setAllDesiredServersRunning();
+
+    WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
+    configSupport.addWlsServer("server1");
+    configSupport.addWlsCluster("clusterA", "server1");
+    configSupport.addWlsServer("server2");
+    configSupport.addWlsCluster("clusterB", "server2");
+    testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
 
     testSupport.runSteps(new DomainStatusUpdater.StatusUpdateStep(endStep));
 
@@ -395,6 +425,12 @@ public class DomainStatusUpdaterTest {
   public void whenNotAllDesiredServersRunningAndProgressingConditionFound_ignoreIt() {
     domain.getStatus().addCondition(new DomainCondition(Progressing));
     setDesiredServerNotRunning();
+
+    WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport("mydomain");
+    configSupport.addWlsServer("server1");
+    configSupport.addWlsServer("server2");
+    configSupport.addWlsCluster("clusterA", "server1", "server2");
+    testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
 
     testSupport.runSteps(new DomainStatusUpdater.StatusUpdateStep(endStep));
 
@@ -513,8 +549,16 @@ public class DomainStatusUpdaterTest {
   }
 
   private void definePodWithCluster(String serverName, String clusterName) {
-    info.getServers().putIfAbsent(serverName, createServerKubernetesObjects(serverName));
+    defineServerPod(serverName);
     setClusterAndNodeName(getPod(serverName), clusterName, serverName);
+  }
+
+  private void defineServerPod(String serverName) {
+    info.setServerPod(serverName, createPod(serverName));
+  }
+
+  private V1Pod createPod(String serverName) {
+    return new V1Pod().metadata(createPodMetadata(serverName)).spec(new V1PodSpec());
   }
 
   @Test
@@ -688,8 +732,6 @@ public class DomainStatusUpdaterTest {
     assertThat(recordedDomain, not(hasCondition(Failed)));
   }
 
-  // ---
-
   @Test
   public void whenDomainLacksStatus_failedStepUpdatesDomainWithFailedTrueAndException() {
     domain.setStatus(null);
@@ -700,6 +742,8 @@ public class DomainStatusUpdaterTest {
         recordedDomain,
         hasCondition(Failed).withStatus("True").withReason("Exception").withMessage(message));
   }
+
+  // ---
 
   @Test
   public void whenDomainLacksFailedCondition_failedStepUpdatesDomainWithFailedTrueAndException() {
@@ -738,5 +782,12 @@ public class DomainStatusUpdaterTest {
     testSupport.runSteps(DomainStatusUpdater.createFailedStep(failure, endStep));
 
     assertThat(recordedDomain, hasCondition(Available));
+  }
+
+  class RecordBody implements BodyMatcher {
+    @Override
+    public boolean matches(Object actualBody) {
+      return recordBody(actualBody);
+    }
   }
 }

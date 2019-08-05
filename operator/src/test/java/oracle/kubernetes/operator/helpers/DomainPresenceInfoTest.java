@@ -4,12 +4,13 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import io.kubernetes.client.models.V1Pod;
+import io.kubernetes.client.models.V1Service;
+import org.junit.Test;
+
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
-
-import io.kubernetes.client.models.V1Service;
-import org.junit.Test;
 
 public class DomainPresenceInfoTest {
   private DomainPresenceInfo info = new DomainPresenceInfo("ns", "domain");
@@ -51,5 +52,18 @@ public class DomainPresenceInfoTest {
     info.setExternalService("admin", service);
 
     assertThat(info.getExternalService("admin"), sameInstance(service));
+  }
+
+  @Test
+  public void whenNoneDefined_getServerPodReturnsNull() {
+    assertThat(info.getServerPod("myserver"), nullValue());
+  }
+
+  @Test
+  public void afterServerPodDefined_nextCallReturnsIt() {
+    V1Pod pod = new V1Pod();
+    info.setServerPod("myserver", pod);
+
+    assertThat(info.getServerPod("myserver"), sameInstance(pod));
   }
 }

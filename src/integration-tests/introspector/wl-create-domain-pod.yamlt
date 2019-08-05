@@ -1,4 +1,4 @@
-# Copyright 2018, Oracle Corporation and/or its affiliates. All rights reserved.
+# Copyright 2018, 2019, Oracle Corporation and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.
 
 apiVersion: v1
@@ -17,7 +17,7 @@ spec:
     - name: JAVA_OPTIONS
       value: "-Djava.security.egd=file:/dev/./urandom "
     - name: USER_MEM_ARGS
-      value: "-Xms64m -Xmx256m "
+      value: "-XX:+UseContainerSupport "
     - name: NAMESPACE
       value: "${NAMESPACE}"
     - name: DOMAIN_UID

@@ -4,30 +4,18 @@
 
 package oracle.kubernetes.operator.helpers;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
-import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
-import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
-import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
-import static oracle.kubernetes.operator.LabelConstants.SERVERNAME_LABEL;
-import static oracle.kubernetes.operator.ProcessingConstants.CLUSTER_NAME;
-import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_COMPONENT_NAME;
-import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
-import static oracle.kubernetes.operator.ProcessingConstants.SERVER_NAME;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1Service;
+import io.kubernetes.client.models.V1ServiceSpec;
 import io.kubernetes.client.util.Watch;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import oracle.kubernetes.TestUtils;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.DomainProcessorImpl;
@@ -42,6 +30,20 @@ import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static com.meterware.simplestub.Stub.createStrictStub;
+import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
+import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
+import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
+import static oracle.kubernetes.operator.LabelConstants.SERVERNAME_LABEL;
+import static oracle.kubernetes.operator.ProcessingConstants.CLUSTER_NAME;
+import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_COMPONENT_NAME;
+import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
+import static oracle.kubernetes.operator.ProcessingConstants.SERVER_NAME;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings("SameParameterValue")
 public class ServicePresenceTest {
@@ -96,7 +98,7 @@ public class ServicePresenceTest {
   public void whenServiceHasNoDomainUid_returnNull() {
     V1Service service = new V1Service().metadata(new V1ObjectMeta());
 
-    assertThat(ServiceHelper.getServiceDomainUID(service), nullValue());
+    assertThat(ServiceHelper.getServiceDomainUid(service), nullValue());
   }
 
   @Test
@@ -105,7 +107,7 @@ public class ServicePresenceTest {
         new V1Service()
             .metadata(new V1ObjectMeta().labels(ImmutableMap.of(DOMAINUID_LABEL, "domain1")));
 
-    assertThat(ServiceHelper.getServiceDomainUID(service), equalTo("domain1"));
+    assertThat(ServiceHelper.getServiceDomainUid(service), equalTo("domain1"));
   }
 
   @Test
@@ -499,6 +501,22 @@ public class ServicePresenceTest {
     processor.dispatchServiceWatch(event);
 
     assertThat(info.getExternalService(SERVER), nullValue());
+  }
+
+  @Test
+  public void whenEventContainsServiceWithNodePortAndNoTypeLabel_addAsExternalService() {
+    V1Service service =
+        new V1Service()
+            .metadata(
+                createMetadata()
+                    .putLabelsItem(CREATEDBYOPERATOR_LABEL, "true")
+                    .putLabelsItem(SERVERNAME_LABEL, SERVER))
+            .spec(new V1ServiceSpec().type(ServiceHelper.NODE_PORT_TYPE));
+    Watch.Response<V1Service> event = WatchEvent.createAddedEvent(service).toWatchResponse();
+
+    processor.dispatchServiceWatch(event);
+
+    assertThat(info.getExternalService(SERVER), sameInstance(service));
   }
 
   private V1Service createClusterService() {

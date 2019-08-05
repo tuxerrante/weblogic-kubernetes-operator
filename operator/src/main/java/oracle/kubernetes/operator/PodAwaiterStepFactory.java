@@ -1,4 +1,4 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -16,4 +16,13 @@ public interface PodAwaiterStepFactory {
    * @return Asynchronous step
    */
   Step waitForReady(V1Pod pod, Step next);
+
+  /**
+   * Waits until the Pod is deleted.
+   *
+   * @param pod Pod to watch
+   * @param next Next processing step once Pod is deleted
+   * @return Asynchronous step
+   */
+  Step waitForDelete(V1Pod pod, Step next);
 }

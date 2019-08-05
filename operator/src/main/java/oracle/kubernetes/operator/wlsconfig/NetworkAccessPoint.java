@@ -1,10 +1,14 @@
-// Copyright 2017, 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.wlsconfig;
 
 import java.util.Map;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /** Contains configuration for a Network Access Point. */
 public class NetworkAccessPoint {
@@ -14,7 +18,8 @@ public class NetworkAccessPoint {
   Integer listenPort;
   Integer publicPort;
 
-  public NetworkAccessPoint() {}
+  public NetworkAccessPoint() {
+  }
 
   NetworkAccessPoint(Map<String, Object> networkAccessPointConfigMap) {
     this(
@@ -31,12 +36,24 @@ public class NetworkAccessPoint {
     this.publicPort = publicPort;
   }
 
+  /**
+   * Return the list of configuration attributes to be retrieved from the REST search request to the
+   * WLS admin server. The value would be used for constructing the REST POST request.
+   */
+  static String getSearchFields() {
+    return "'name', 'protocol', 'listenPort', 'publicPort'";
+  }
+
   public String getName() {
     return name;
   }
 
   public String getProtocol() {
     return protocol;
+  }
+
+  public boolean isAdminProtocol() {
+    return "admin".equals(protocol);
   }
 
   public Integer getListenPort() {
@@ -47,28 +64,39 @@ public class NetworkAccessPoint {
     return publicPort;
   }
 
-  /**
-   * Return the list of configuration attributes to be retrieved from the REST search request to the
-   * WLS admin server. The value would be used for constructing the REST POST request.
-   */
-  static String getSearchFields() {
-    return "'name', 'protocol', 'listenPort', 'publicPort'";
+  @Override
+  public String toString() {
+    return new ToStringBuilder(this)
+        .append("name", name)
+        .append("protocol", protocol)
+        .append("listenPort", listenPort)
+        .append("publicPort", publicPort)
+        .toString();
   }
 
   @Override
-  public String toString() {
-    return "NetworkAccessPoint{"
-        + "name='"
-        + name
-        + '\''
-        + ", protocol='"
-        + protocol
-        + '\''
-        + ", listenPort="
-        + listenPort
-        + '\''
-        + ", publicPort="
-        + publicPort
-        + '}';
+  public int hashCode() {
+    HashCodeBuilder builder =
+        new HashCodeBuilder().append(name).append(protocol).append(listenPort).append(publicPort);
+    return builder.toHashCode();
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other == this) {
+      return true;
+    }
+    if (!(other instanceof NetworkAccessPoint)) {
+      return false;
+    }
+
+    NetworkAccessPoint rhs = ((NetworkAccessPoint) other);
+    EqualsBuilder builder =
+        new EqualsBuilder()
+            .append(name, rhs.name)
+            .append(protocol, rhs.protocol)
+            .append(listenPort, rhs.listenPort)
+            .append(publicPort, rhs.publicPort);
+    return builder.isEquals();
   }
 }

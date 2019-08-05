@@ -1,21 +1,16 @@
 // Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
-// http://oss.oracle.com/licenses/upl..
+// http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
 
-import static oracle.kubernetes.operator.logging.MessageKeys.ADMIN_SERVICE_CREATED;
-import static oracle.kubernetes.operator.logging.MessageKeys.ADMIN_SERVICE_EXISTS;
-import static oracle.kubernetes.operator.logging.MessageKeys.ADMIN_SERVICE_REPLACED;
-import static oracle.kubernetes.operator.logging.MessageKeys.CLUSTER_SERVICE_CREATED;
-import static oracle.kubernetes.operator.logging.MessageKeys.CLUSTER_SERVICE_EXISTS;
-import static oracle.kubernetes.operator.logging.MessageKeys.CLUSTER_SERVICE_REPLACED;
-import static oracle.kubernetes.operator.logging.MessageKeys.EXTERNAL_CHANNEL_SERVICE_CREATED;
-import static oracle.kubernetes.operator.logging.MessageKeys.EXTERNAL_CHANNEL_SERVICE_EXISTS;
-import static oracle.kubernetes.operator.logging.MessageKeys.EXTERNAL_CHANNEL_SERVICE_REPLACED;
-import static oracle.kubernetes.operator.logging.MessageKeys.MANAGED_SERVICE_CREATED;
-import static oracle.kubernetes.operator.logging.MessageKeys.MANAGED_SERVICE_EXISTS;
-import static oracle.kubernetes.operator.logging.MessageKeys.MANAGED_SERVICE_REPLACED;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.annotation.Nonnull;
 
 import io.kubernetes.client.models.V1DeleteOptions;
 import io.kubernetes.client.models.V1ObjectMeta;
@@ -23,15 +18,6 @@ import io.kubernetes.client.models.V1Service;
 import io.kubernetes.client.models.V1ServicePort;
 import io.kubernetes.client.models.V1ServiceSpec;
 import io.kubernetes.client.models.V1Status;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentMap;
-import javax.annotation.Nonnull;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.VersionConstants;
@@ -54,10 +40,26 @@ import oracle.kubernetes.weblogic.domain.model.Domain;
 import oracle.kubernetes.weblogic.domain.model.ServerSpec;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
+import static oracle.kubernetes.operator.logging.MessageKeys.ADMIN_SERVICE_CREATED;
+import static oracle.kubernetes.operator.logging.MessageKeys.ADMIN_SERVICE_EXISTS;
+import static oracle.kubernetes.operator.logging.MessageKeys.ADMIN_SERVICE_REPLACED;
+import static oracle.kubernetes.operator.logging.MessageKeys.CLUSTER_SERVICE_CREATED;
+import static oracle.kubernetes.operator.logging.MessageKeys.CLUSTER_SERVICE_EXISTS;
+import static oracle.kubernetes.operator.logging.MessageKeys.CLUSTER_SERVICE_REPLACED;
+import static oracle.kubernetes.operator.logging.MessageKeys.EXTERNAL_CHANNEL_SERVICE_CREATED;
+import static oracle.kubernetes.operator.logging.MessageKeys.EXTERNAL_CHANNEL_SERVICE_EXISTS;
+import static oracle.kubernetes.operator.logging.MessageKeys.EXTERNAL_CHANNEL_SERVICE_REPLACED;
+import static oracle.kubernetes.operator.logging.MessageKeys.MANAGED_SERVICE_CREATED;
+import static oracle.kubernetes.operator.logging.MessageKeys.MANAGED_SERVICE_EXISTS;
+import static oracle.kubernetes.operator.logging.MessageKeys.MANAGED_SERVICE_REPLACED;
+
 public class ServiceHelper {
+  public static final String CLUSTER_IP_TYPE = "ClusterIP";
+  public static final String NODE_PORT_TYPE = "NodePort";
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private ServiceHelper() {}
+  private ServiceHelper() {
+  }
 
   /**
    * Create asynchronous step for internal cluster service.
@@ -66,34 +68,45 @@ public class ServiceHelper {
    * @return Step for internal service creation
    */
   public static Step createForServerStep(Step next) {
-    return new ForServerStep(next);
+    return createForServerStep(false, next);
+  }
+
+  /**
+   * Create asynchronous step for internal cluster service.
+   *
+   * @param isPreserveServices true, if this service is for a placeholder service with no pod
+   * @param next Next processing step
+   * @return Step for internal service creation
+   */
+  public static Step createForServerStep(boolean isPreserveServices, Step next) {
+    return new ForServerStep(isPreserveServices, next);
   }
 
   static V1Service createServerServiceModel(Packet packet) {
-    return new ServerServiceStepContext(null, packet).createModel();
+    return new ServerServiceStepContext(false, null, packet).createModel();
   }
 
   public static void addToPresence(DomainPresenceInfo info, V1Service service) {
-    KubernetesServiceType.getType(service).addToPresence(info, service);
+    OperatorServiceType.getType(service).addToPresence(info, service);
   }
 
   public static void updatePresenceFromEvent(DomainPresenceInfo info, V1Service service) {
-    KubernetesServiceType.getType(service).updateFromEvent(info, service);
+    OperatorServiceType.getType(service).updateFromEvent(info, service);
   }
 
   public static V1Service[] getServerServices(DomainPresenceInfo info) {
-    return KubernetesServiceType.SERVER.getServices(info);
+    return OperatorServiceType.SERVER.getServices(info);
   }
 
   public static boolean isServerService(V1Service service) {
-    return KubernetesServiceType.getType(service) == KubernetesServiceType.SERVER;
+    return OperatorServiceType.getType(service) == OperatorServiceType.SERVER;
   }
 
   public static boolean deleteFromEvent(DomainPresenceInfo info, V1Service service) {
-    return KubernetesServiceType.getType(service).deleteFromEvent(info, service);
+    return OperatorServiceType.getType(service).deleteFromEvent(info, service);
   }
 
-  public static String getServiceDomainUID(V1Service service) {
+  public static String getServiceDomainUid(V1Service service) {
     return getLabelValue(service, LabelConstants.DOMAINUID_LABEL);
   }
 
@@ -116,14 +129,68 @@ public class ServiceHelper {
     return getLabelValue(service, LabelConstants.CLUSTERNAME_LABEL);
   }
 
+  static boolean isNodePortType(V1Service service) {
+    return NODE_PORT_TYPE.equals(getSpecType(service));
+  }
+
+  private static String getSpecType(V1Service service) {
+    return Optional.ofNullable(service.getSpec()).map(V1ServiceSpec::getType).orElse("");
+  }
+
+  /**
+   * Factory for {@link Step} that deletes services associated with a specific server.
+   *
+   * @param serverName Server name
+   * @param next Next processing step
+   * @return Step for deleting per-managed server and channel services
+   */
+  public static Step deleteServicesStep(String serverName, Step next) {
+    return new DeleteServiceStep(serverName, next);
+  }
+
+  /**
+   * Create asynchronous step for internal cluster service.
+   *
+   * @param next Next processing step
+   * @return Step for internal service creation
+   */
+  public static Step createForClusterStep(Step next) {
+    return new ForClusterStep(next);
+  }
+
+  static V1Service createClusterServiceModel(Packet packet) {
+    return new ClusterStepContext(null, packet).createModel();
+  }
+
+  private static boolean canUseCurrentService(V1Service model, V1Service current) {
+    return AnnotationHelper.getHash(model).equals(AnnotationHelper.getHash(current));
+  }
+
+  /**
+   * Create asynchronous step for external, NodePort service.
+   *
+   * @param next Next processing step
+   * @return Step for creating external service
+   */
+  public static Step createForExternalServiceStep(Step next) {
+    return new ForExternalServiceStep(next);
+  }
+
+  static V1Service createExternalServiceModel(Packet packet) {
+    return new ExternalServiceStepContext(null, packet).createModel();
+  }
+
   private static class ForServerStep extends ServiceHelperStep {
-    ForServerStep(Step next) {
+    private final boolean isPreserveServices;
+
+    ForServerStep(boolean isPreserveServices, Step next) {
       super(next);
+      this.isPreserveServices = isPreserveServices;
     }
 
     @Override
     protected ServiceStepContext createContext(Packet packet) {
-      return new ServerServiceStepContext(this, packet);
+      return new ServerServiceStepContext(isPreserveServices, this, packet);
     }
   }
 
@@ -149,20 +216,22 @@ public class ServiceHelper {
     protected final String clusterName;
     protected final KubernetesVersion version;
     final WlsServerConfig scan;
+    private final boolean isPreserveServices;
 
-    ServerServiceStepContext(Step conflictStep, Packet packet) {
-      super(conflictStep, packet, KubernetesServiceType.SERVER);
+    ServerServiceStepContext(boolean isPreserveServices, Step conflictStep, Packet packet) {
+      super(conflictStep, packet, OperatorServiceType.SERVER);
+      this.isPreserveServices = isPreserveServices;
       serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
       clusterName = (String) packet.get(ProcessingConstants.CLUSTER_NAME);
       scan = (WlsServerConfig) packet.get(ProcessingConstants.SERVER_SCAN);
-      version = packet.getSPI(KubernetesVersion.class);
+      version = packet.getSpi(KubernetesVersion.class);
     }
 
     @Override
     protected V1ServiceSpec createServiceSpec() {
       V1ServiceSpec serviceSpec =
           super.createServiceSpec()
-              .clusterIP("None")
+              .clusterIP(isPreserveServices ? null : "None")
               .ports(createServicePorts())
               .putSelectorItem(LabelConstants.SERVERNAME_LABEL, getServerName());
       if (isPublishNotReadyAddressesSupported())
@@ -211,7 +280,7 @@ public class ServiceHelper {
 
     @Override
     protected void logServiceExists() {
-      LOGGER.fine(getServiceExistsMessageKey(), getDomainUID(), getServerName());
+      LOGGER.fine(getServiceExistsMessageKey(), getDomainUid(), getServerName());
     }
 
     private String getServiceExistsMessageKey() {
@@ -220,7 +289,7 @@ public class ServiceHelper {
 
     @Override
     protected void logServiceCreated(String messageKey) {
-      LOGGER.info(messageKey, getDomainUID(), getServerName());
+      LOGGER.info(messageKey, getDomainUid(), getServerName());
     }
 
     @Override
@@ -254,12 +323,12 @@ public class ServiceHelper {
 
     @Override
     protected String getSpecType() {
-      return "ClusterIP";
+      return CLUSTER_IP_TYPE;
     }
 
     @Override
     protected String createServiceName() {
-      return LegalNames.toServerServiceName(getDomainUID(), getServerName());
+      return LegalNames.toServerServiceName(getDomainUid(), getServerName());
     }
 
     @Override
@@ -283,44 +352,17 @@ public class ServiceHelper {
     protected List<V1ServicePort> ports;
     DomainPresenceInfo info;
     WlsDomainConfig domainTopology;
-    private KubernetesServiceType serviceType;
+    private OperatorServiceType serviceType;
 
-    ServiceStepContext(Step conflictStep, Packet packet, KubernetesServiceType serviceType) {
+    ServiceStepContext(Step conflictStep, Packet packet, OperatorServiceType serviceType) {
       this.conflictStep = conflictStep;
-      info = packet.getSPI(DomainPresenceInfo.class);
+      info = packet.getSpi(DomainPresenceInfo.class);
       domainTopology = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
       this.serviceType = serviceType;
     }
 
     Step getConflictStep() {
       return new ConflictStep();
-    }
-
-    private class ConflictStep extends Step {
-      @Override
-      public NextAction apply(Packet packet) {
-        return doNext(
-            new CallBuilder()
-                .readServiceAsync(
-                    createServiceName(), getNamespace(), new ReadServiceResponse(conflictStep)),
-            packet);
-      }
-
-      @Override
-      public boolean equals(Object other) {
-        if (other == this) {
-          return true;
-        }
-        if (!(other instanceof ConflictStep)) {
-          return false;
-        }
-        ConflictStep rhs = ((ConflictStep) other);
-        return new EqualsBuilder().append(conflictStep, rhs.getConflictStep()).isEquals();
-      }
-
-      private Step getConflictStep() {
-        return conflictStep;
-      }
     }
 
     V1Service createModel() {
@@ -335,7 +377,7 @@ public class ServiceHelper {
     protected V1ServiceSpec createServiceSpec() {
       return new V1ServiceSpec()
           .type(getSpecType())
-          .putSelectorItem(LabelConstants.DOMAINUID_LABEL, getDomainUID())
+          .putSelectorItem(LabelConstants.DOMAINUID_LABEL, getDomainUid())
           .putSelectorItem(LabelConstants.CREATEDBYOPERATOR_LABEL, "true")
           .ports(createServicePorts());
     }
@@ -364,7 +406,7 @@ public class ServiceHelper {
 
     V1ServicePort createServicePort(String portName, Integer port) {
       return new V1ServicePort()
-          .name(LegalNames.toDNS1123LegalName(portName))
+          .name(LegalNames.toDns1123LegalName(portName))
           .port(port)
           .protocol("TCP");
     }
@@ -379,7 +421,7 @@ public class ServiceHelper {
       metadata
           .putLabelsItem(
               LabelConstants.RESOURCE_VERSION_LABEL, VersionConstants.DEFAULT_DOMAIN_VERSION)
-          .putLabelsItem(LabelConstants.DOMAINUID_LABEL, getDomainUID())
+          .putLabelsItem(LabelConstants.DOMAINUID_LABEL, getDomainUid())
           .putLabelsItem(LabelConstants.DOMAINNAME_LABEL, getDomainName())
           .putLabelsItem(LabelConstants.CREATEDBYOPERATOR_LABEL, "true");
 
@@ -397,8 +439,8 @@ public class ServiceHelper {
       return info.getDomain();
     }
 
-    String getDomainUID() {
-      return getDomain().getDomainUID();
+    String getDomainUid() {
+      return getDomain().getDomainUid();
     }
 
     String getNamespace() {
@@ -436,6 +478,59 @@ public class ServiceHelper {
       }
     }
 
+    protected abstract void logServiceExists();
+
+    private Step createNewService(Step next) {
+      return createService(getServiceCreatedMessageKey(), next);
+    }
+
+    protected abstract String getServiceCreatedMessageKey();
+
+    private Step deleteAndReplaceService(Step next) {
+      V1DeleteOptions deleteOptions = new V1DeleteOptions();
+      return new CallBuilder()
+          .deleteServiceAsync(
+              createServiceName(), getNamespace(), deleteOptions, new DeleteServiceResponse(next));
+    }
+
+    private Step createReplacementService(Step next) {
+      return createService(getServiceReplaceMessageKey(), next);
+    }
+
+    protected abstract String getServiceReplaceMessageKey();
+
+    private Step createService(String messageKey, Step next) {
+      return new CallBuilder()
+          .createServiceAsync(getNamespace(), createModel(), new CreateResponse(messageKey, next));
+    }
+
+    private class ConflictStep extends Step {
+      @Override
+      public NextAction apply(Packet packet) {
+        return doNext(
+            new CallBuilder()
+                .readServiceAsync(
+                    createServiceName(), getNamespace(), new ReadServiceResponse(conflictStep)),
+            packet);
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        if (other == this) {
+          return true;
+        }
+        if (!(other instanceof ConflictStep)) {
+          return false;
+        }
+        ConflictStep rhs = ((ConflictStep) other);
+        return new EqualsBuilder().append(conflictStep, rhs.getConflictStep()).isEquals();
+      }
+
+      private Step getConflictStep() {
+        return conflictStep;
+      }
+    }
+
     private class ReadServiceResponse extends DefaultResponseStep<V1Service> {
       ReadServiceResponse(Step next) {
         super(next);
@@ -460,21 +555,6 @@ public class ServiceHelper {
       }
     }
 
-    protected abstract void logServiceExists();
-
-    private Step createNewService(Step next) {
-      return createService(getServiceCreatedMessageKey(), next);
-    }
-
-    protected abstract String getServiceCreatedMessageKey();
-
-    private Step deleteAndReplaceService(Step next) {
-      V1DeleteOptions deleteOptions = new V1DeleteOptions();
-      return new CallBuilder()
-          .deleteServiceAsync(
-              createServiceName(), getNamespace(), deleteOptions, new DeleteServiceResponse(next));
-    }
-
     private class DeleteServiceResponse extends ResponseStep<V1Status> {
       DeleteServiceResponse(Step next) {
         super(next);
@@ -491,17 +571,6 @@ public class ServiceHelper {
       public NextAction onSuccess(Packet packet, CallResponse<V1Status> callResponse) {
         return doNext(createReplacementService(getNext()), packet);
       }
-    }
-
-    private Step createReplacementService(Step next) {
-      return createService(getServiceReplaceMessageKey(), next);
-    }
-
-    protected abstract String getServiceReplaceMessageKey();
-
-    private Step createService(String messageKey, Step next) {
-      return new CallBuilder()
-          .createServiceAsync(getNamespace(), createModel(), new CreateResponse(messageKey, next));
     }
 
     private class CreateResponse extends ResponseStep<V1Service> {
@@ -526,56 +595,18 @@ public class ServiceHelper {
     }
   }
 
-  /**
-   * Factory for {@link Step} that deletes per-managed server and channel services.
-   *
-   * @param sko Server Kubernetes Objects
-   * @param next Next processing step
-   * @return Step for deleting per-managed server and channel services
-   */
-  public static Step deleteServicesStep(ServerKubernetesObjects sko, Step next) {
-    return new DeleteServicesIteratorStep(sko, next);
-  }
-
-  private static class DeleteServicesIteratorStep extends Step {
-    private final ServerKubernetesObjects sko;
-
-    DeleteServicesIteratorStep(ServerKubernetesObjects sko, Step next) {
-      super(next);
-      this.sko = sko;
-    }
-
-    @Override
-    public NextAction apply(Packet packet) {
-      Collection<StepAndPacket> startDetails = new ArrayList<>();
-
-      startDetails.add(new StepAndPacket(new DeleteServiceStep(sko, null), packet.clone()));
-      ConcurrentMap<String, V1Service> channels = sko.getChannels();
-      for (Map.Entry<String, V1Service> entry : channels.entrySet()) {
-        startDetails.add(
-            new StepAndPacket(
-                new DeleteChannelServiceStep(channels, entry.getKey(), null), packet.clone()));
-      }
-
-      if (startDetails.isEmpty()) {
-        return doNext(packet);
-      }
-      return doForkJoin(getNext(), packet, startDetails);
-    }
-  }
-
   private static class DeleteServiceStep extends Step {
-    private final ServerKubernetesObjects sko;
+    private final String serverName;
 
-    DeleteServiceStep(ServerKubernetesObjects sko, Step next) {
+    DeleteServiceStep(String serverName, Step next) {
       super(next);
-      this.sko = sko;
+      this.serverName = serverName;
     }
 
     @Override
     public NextAction apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSPI(DomainPresenceInfo.class);
-      V1Service oldService = removeServiceFromRecord();
+      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      V1Service oldService = info.removeServerService(serverName);
 
       if (oldService != null) {
         return doNext(
@@ -589,60 +620,6 @@ public class ServiceHelper {
       return new CallBuilder()
           .deleteServiceAsync(name, namespace, deleteOptions, new DefaultResponseStep<>(getNext()));
     }
-
-    // Set service to null so that watcher doesn't try to recreate service
-    private V1Service removeServiceFromRecord() {
-      return sko.getService().getAndSet(null);
-    }
-  }
-
-  private static class DeleteChannelServiceStep extends Step {
-    private final ConcurrentMap<String, V1Service> channels;
-    private final String channelName;
-
-    DeleteChannelServiceStep(
-        ConcurrentMap<String, V1Service> channels, String channelName, Step next) {
-      super(next);
-      this.channels = channels;
-      this.channelName = channelName;
-    }
-
-    @Override
-    public NextAction apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSPI(DomainPresenceInfo.class);
-      V1Service oldService = removeServiceFromRecord();
-
-      if (oldService != null) {
-        return doNext(
-            deleteService(oldService.getMetadata().getName(), info.getNamespace()), packet);
-      }
-      return doNext(packet);
-    }
-
-    Step deleteService(String name, String namespace) {
-      V1DeleteOptions deleteOptions = new V1DeleteOptions();
-      return new CallBuilder()
-          .deleteServiceAsync(name, namespace, deleteOptions, new DefaultResponseStep<>(getNext()));
-    }
-
-    // Set service to null so that watcher doesn't try to recreate service
-    private V1Service removeServiceFromRecord() {
-      return channels.remove(channelName);
-    }
-  }
-
-  /**
-   * Create asynchronous step for internal cluster service.
-   *
-   * @param next Next processing step
-   * @return Step for internal service creation
-   */
-  public static Step createForClusterStep(Step next) {
-    return new ForClusterStep(next);
-  }
-
-  static V1Service createClusterServiceModel(Packet packet) {
-    return new ClusterStepContext(null, packet).createModel();
   }
 
   private static class ForClusterStep extends ServiceHelperStep {
@@ -659,9 +636,10 @@ public class ServiceHelper {
   private static class ClusterStepContext extends ServiceStepContext {
     private final String clusterName;
     private final WlsDomainConfig config;
+    Map<String, V1ServicePort> ports = new HashMap<>();
 
     ClusterStepContext(Step conflictStep, Packet packet) {
-      super(conflictStep, packet, KubernetesServiceType.CLUSTER);
+      super(conflictStep, packet, OperatorServiceType.CLUSTER);
       clusterName = (String) packet.get(ProcessingConstants.CLUSTER_NAME);
       config = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
     }
@@ -670,8 +648,6 @@ public class ServiceHelper {
       return super.createServiceSpec()
           .putSelectorItem(LabelConstants.CLUSTERNAME_LABEL, clusterName);
     }
-
-    Map<String, V1ServicePort> ports = new HashMap<>();
 
     protected List<V1ServicePort> createServicePorts() {
       for (WlsServerConfig server : getServerConfigs(config.getClusterConfig(clusterName)))
@@ -694,7 +670,7 @@ public class ServiceHelper {
 
     @Override
     protected String getSpecType() {
-      return "ClusterIP";
+      return CLUSTER_IP_TYPE;
     }
 
     protected V1ObjectMeta createMetadata() {
@@ -702,7 +678,7 @@ public class ServiceHelper {
     }
 
     protected String createServiceName() {
-      return LegalNames.toClusterServiceName(getDomainUID(), clusterName);
+      return LegalNames.toClusterServiceName(getDomainUid(), clusterName);
     }
 
     @Override
@@ -722,12 +698,12 @@ public class ServiceHelper {
 
     @Override
     protected void logServiceCreated(String messageKey) {
-      LOGGER.info(messageKey, getDomainUID(), clusterName);
+      LOGGER.info(messageKey, getDomainUid(), clusterName);
     }
 
     @Override
     protected void logServiceExists() {
-      LOGGER.fine(CLUSTER_SERVICE_EXISTS, getDomainUID(), clusterName);
+      LOGGER.fine(CLUSTER_SERVICE_EXISTS, getDomainUid(), clusterName);
     }
 
     @Override
@@ -755,24 +731,6 @@ public class ServiceHelper {
     }
   }
 
-  private static boolean canUseCurrentService(V1Service model, V1Service current) {
-    return AnnotationHelper.getHash(model).equals(AnnotationHelper.getHash(current));
-  }
-
-  /**
-   * Create asynchronous step for external, NodePort service.
-   *
-   * @param next Next processing step
-   * @return Step for creating external service
-   */
-  public static Step createForExternalServiceStep(Step next) {
-    return new ForExternalServiceStep(next);
-  }
-
-  static V1Service createExternalServiceModel(Packet packet) {
-    return new ExternalServiceStepContext(null, packet).createModel();
-  }
-
   private static class ForExternalServiceStep extends ServiceHelperStep {
     ForExternalServiceStep(Step next) {
       super(next);
@@ -789,7 +747,7 @@ public class ServiceHelper {
     private final String adminServerName;
 
     ExternalServiceStepContext(Step conflictStep, Packet packet) {
-      super(conflictStep, packet, KubernetesServiceType.EXTERNAL);
+      super(conflictStep, packet, OperatorServiceType.EXTERNAL);
       adminServerName = (String) packet.get(ProcessingConstants.SERVER_NAME);
     }
 
@@ -806,12 +764,12 @@ public class ServiceHelper {
 
     @Override
     protected String createServiceName() {
-      return LegalNames.toExternalServiceName(getDomainUID(), adminServerName);
+      return LegalNames.toExternalServiceName(getDomainUid(), adminServerName);
     }
 
     @Override
     protected String getSpecType() {
-      return "NodePort";
+      return NODE_PORT_TYPE;
     }
 
     @Override
@@ -851,12 +809,12 @@ public class ServiceHelper {
 
     @Override
     protected void logServiceCreated(String messageKey) {
-      LOGGER.info(messageKey, getDomainUID());
+      LOGGER.info(messageKey, getDomainUid());
     }
 
     @Override
     protected void logServiceExists() {
-      LOGGER.fine(EXTERNAL_CHANNEL_SERVICE_EXISTS, getDomainUID());
+      LOGGER.fine(EXTERNAL_CHANNEL_SERVICE_EXISTS, getDomainUid());
     }
 
     protected List<V1ServicePort> createServicePorts() {

@@ -1,4 +1,4 @@
-// Copyright 2017, 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -10,6 +10,8 @@ import java.util.Set;
 
 public interface WebLogicConstants {
   public static final String UNKNOWN_STATE = "UNKNOWN";
+  public static final String STARTING_STATE = "STARTING";
+  public static final String SHUTTING_DOWN_STATE = "SHUTTING_DOWN";
   public static final String SHUTDOWN_STATE = "SHUTDOWN";
   public static final String STANDBY_STATE = "STANDBY";
   public static final String ADMIN_STATE = "ADMIN";

@@ -1,4 +1,4 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 
 /** Individual step in a processing flow. */
@@ -74,7 +75,7 @@ public abstract class Step {
     String name = getClass().getName();
     int idx = name.lastIndexOf('.');
     if (idx >= 0) {
-      name = name.substring(idx + 1, name.length());
+      name = name.substring(idx + 1);
     }
     name = name.endsWith("Step") ? name.substring(0, name.length() - 4) : name;
     String detail = getDetail();
@@ -83,6 +84,13 @@ public abstract class Step {
 
   protected String getDetail() {
     return null;
+  }
+
+  public String toString() {
+    if (next == null) {
+      return getName();
+    }
+    return getName() + "[" + next.toString() + "]";
   }
 
   /**
@@ -221,6 +229,81 @@ public abstract class Step {
     return next;
   }
 
+  /**
+   * Create a {@link NextAction} that suspends the current {@link Fiber} and that starts child
+   * fibers for each step and packet pair. When all of the created child fibers complete, then this
+   * fiber is resumed with the indicated step and packet.
+   *
+   * @param step Step to invoke next when resumed after child fibers complete
+   * @param packet Resume packet
+   * @param startDetails Pairs of step and packet to use when starting child fibers
+   * @return Next action
+   */
+  protected NextAction doForkJoin(
+      Step step, Packet packet, Collection<StepAndPacket> startDetails) {
+    return doSuspend(
+        step,
+        (fiber) -> {
+          CompletionCallback callback =
+              new JoinCompletionCallback(fiber, packet, startDetails.size()) {
+                @Override
+                public void onCompletion(Packet p) {
+                  if (count.decrementAndGet() == 0) {
+                    // no need to synchronize throwables as all fibers are done
+                    if (throwables.isEmpty()) {
+                      fiber.resume(packet);
+                    } else if (throwables.size() == 1) {
+                      fiber.terminate(throwables.get(0), packet);
+                    } else {
+                      fiber.terminate(new MultiThrowable(throwables), packet);
+                    }
+                  }
+                }
+              };
+          // start forked fibers
+          for (StepAndPacket sp : startDetails) {
+            fiber.createChildFiber().start(sp.step, sp.packet, callback);
+          }
+        });
+  }
+
+  /**
+   * Create a {@link NextAction} that suspends the current {@link Fiber} and that starts child
+   * fibers for each step and packet pair. When at least one of the created child fibers completes,
+   * then this fiber is resumed with the indicated step and packet and any other child fibers are
+   * cancelled.
+   *
+   * @param step Step to invoke next when resumed after at least one child fiber completes
+   * @param packet Resume packet
+   * @param startDetails Pairs of step and packet to use when starting child fibers
+   * @return Next action
+   */
+  protected NextAction doForkAtLeastOne(
+      Step step, Packet packet, Collection<StepAndPacket> startDetails) {
+    return doSuspend(
+        step,
+        (fiber) -> {
+          Collection<Fiber> createdFibers = new ArrayList<>();
+          CompletionCallback callback =
+              new JoinCompletionCallback(fiber, packet, startDetails.size()) {
+                @Override
+                public void onCompletion(Packet p) {
+                  count.decrementAndGet();
+                  fiber.resume(packet);
+                  synchronized (createdFibers) {
+                    for (Fiber f : createdFibers) {
+                      f.cancel(true);
+                    }
+                  }
+                }
+              };
+          // start forked fibers
+          for (StepAndPacket sp : startDetails) {
+            fiber.createChildFiber().start(sp.step, sp.packet, callback);
+          }
+        });
+  }
+
   /** Multi-exception. */
   @SuppressWarnings("serial")
   public static class MultiThrowable extends RuntimeException {
@@ -241,60 +324,32 @@ public abstract class Step {
     }
   }
 
-  /**
-   * Create a {@link NextAction} that suspends the current {@link Fiber} and that starts child
-   * fibers for each step and packet pair. When all of the created child fibers complete, then this
-   * fiber is resumed with the indicated step and packet.
-   *
-   * @param step Step to invoke next when resumed after child fibers complete
-   * @param packet Resume packet
-   * @param startDetails Pairs of step and packet to use when starting child fibers
-   * @return Next action
-   */
-  protected NextAction doForkJoin(
-      Step step, Packet packet, Collection<StepAndPacket> startDetails) {
-    return doSuspend(
-        step,
-        (fiber) -> {
-          CompletionCallback callback =
-              new CompletionCallback() {
-                final AtomicInteger count = new AtomicInteger(startDetails.size());
-                final List<Throwable> throwables = new ArrayList<Throwable>();
+  private abstract static class JoinCompletionCallback implements CompletionCallback {
+    protected final Fiber fiber;
+    protected final Packet packet;
+    protected final AtomicInteger count;
+    protected final List<Throwable> throwables = new ArrayList<Throwable>();
 
-                @Override
-                public void onCompletion(Packet packet) {
-                  if (count.decrementAndGet() == 0) {
-                    // no need to synchronize throwables as all fibers are done
-                    if (throwables.isEmpty()) {
-                      fiber.resume(packet);
-                    } else if (throwables.size() == 1) {
-                      fiber.terminate(throwables.get(0), packet);
-                    } else {
-                      fiber.terminate(new MultiThrowable(throwables), packet);
-                    }
-                  }
-                }
+    JoinCompletionCallback(Fiber fiber, Packet packet, int initialCount) {
+      this.fiber = fiber;
+      this.packet = packet;
+      this.count = new AtomicInteger(initialCount);
+    }
 
-                @Override
-                public void onThrowable(Packet packet, Throwable throwable) {
-                  synchronized (throwables) {
-                    throwables.add(throwable);
-                  }
-                  if (count.decrementAndGet() == 0) {
-                    // no need to synchronize throwables as all fibers are done
-                    if (throwables.size() == 1) {
-                      fiber.terminate(throwable, packet);
-                    } else {
-                      fiber.terminate(new MultiThrowable(throwables), packet);
-                    }
-                  }
-                }
-              };
-          // start forked fibers
-          for (StepAndPacket sp : startDetails) {
-            fiber.createChildFiber().start(sp.step, sp.packet, callback);
-          }
-        });
+    @Override
+    public void onThrowable(Packet p, Throwable throwable) {
+      synchronized (throwables) {
+        throwables.add(throwable);
+      }
+      if (count.decrementAndGet() == 0) {
+        // no need to synchronize throwables as all fibers are done
+        if (throwables.size() == 1) {
+          fiber.terminate(throwable, packet);
+        } else {
+          fiber.terminate(new MultiThrowable(throwables), packet);
+        }
+      }
+    }
   }
 
   public static class StepAndPacket {

@@ -1,4 +1,4 @@
-// Copyright 2017, 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -25,10 +25,10 @@ public class WatchPodReadyAdminStep extends Step {
 
   @Override
   public NextAction apply(Packet packet) {
-    DomainPresenceInfo info = packet.getSPI(DomainPresenceInfo.class);
+    DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
     WlsDomainConfig domainTopology =
         (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
-    V1Pod adminPod = info.getServers().get(domainTopology.getAdminServerName()).getPod().get();
+    V1Pod adminPod = info.getServerPod(domainTopology.getAdminServerName());
 
     PodAwaiterStepFactory pw = podAwaiterStepFactory;
     packet

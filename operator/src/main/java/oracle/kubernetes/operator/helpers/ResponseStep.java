@@ -1,12 +1,13 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
 
-import io.kubernetes.client.ApiException;
 import java.util.List;
 import java.util.Map;
+
+import io.kubernetes.client.ApiException;
 import oracle.kubernetes.operator.calls.AsyncRequestStep;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.RetryStrategy;
@@ -26,11 +27,13 @@ import oracle.kubernetes.operator.work.Step;
  */
 public abstract class ResponseStep<T> extends Step {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
-
+  private final Step conflictStep;
   private Step previousStep = null;
 
   /** Constructor specifying no next step. */
-  public ResponseStep() {}
+  public ResponseStep() {
+    this(null);
+  }
 
   /**
    * Constructor specifying next step.
@@ -38,7 +41,18 @@ public abstract class ResponseStep<T> extends Step {
    * @param nextStep Next step
    */
   public ResponseStep(Step nextStep) {
+    this(null, nextStep);
+  }
+
+  /**
+   * Constructor specifying conflict and next step.
+   *
+   * @param conflictStep Conflict step
+   * @param nextStep Next step
+   */
+  public ResponseStep(Step conflictStep, Step nextStep) {
     super(nextStep);
+    this.conflictStep = conflictStep;
   }
 
   public final void setPrevious(Step previousStep) {
@@ -50,7 +64,7 @@ public abstract class ResponseStep<T> extends Step {
     NextAction nextAction = null;
 
     @SuppressWarnings("unchecked")
-    CallResponse<T> callResponse = packet.getSPI(CallResponse.class);
+    CallResponse<T> callResponse = packet.getSpi(CallResponse.class);
     if (callResponse != null) {
       if (callResponse.getResult() != null) {
         nextAction = onSuccess(packet, callResponse);
@@ -62,7 +76,7 @@ public abstract class ResponseStep<T> extends Step {
 
     if (nextAction == null) {
       // call timed-out
-      nextAction = doPotentialRetry(null, packet, null, 0, null);
+      nextAction = doPotentialRetry(conflictStep, packet, null, 0, null);
       if (nextAction == null) {
         nextAction = doEnd(packet);
       }
@@ -84,7 +98,7 @@ public abstract class ResponseStep<T> extends Step {
    * @return Next action for list continue
    */
   protected final NextAction doContinueList(Packet packet) {
-    RetryStrategy retryStrategy = packet.getSPI(RetryStrategy.class);
+    RetryStrategy retryStrategy = packet.getSpi(RetryStrategy.class);
     if (retryStrategy != null) {
       retryStrategy.reset();
     }
@@ -107,7 +121,7 @@ public abstract class ResponseStep<T> extends Step {
       ApiException e,
       int statusCode,
       Map<String, List<String>> responseHeaders) {
-    RetryStrategy retryStrategy = packet.getSPI(RetryStrategy.class);
+    RetryStrategy retryStrategy = packet.getSpi(RetryStrategy.class);
     if (retryStrategy != null) {
       return retryStrategy.doPotentialRetry(conflictStep, packet, e, statusCode, responseHeaders);
     }

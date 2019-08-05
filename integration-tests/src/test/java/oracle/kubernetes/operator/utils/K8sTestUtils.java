@@ -4,9 +4,10 @@
 
 package oracle.kubernetes.operator.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import java.io.IOException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
@@ -22,8 +23,10 @@ import io.kubernetes.client.models.V1ClusterRoleList;
 import io.kubernetes.client.models.V1ConfigMapList;
 import io.kubernetes.client.models.V1DeploymentList;
 import io.kubernetes.client.models.V1JobList;
+import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.models.V1PersistentVolumeList;
+import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodList;
 import io.kubernetes.client.models.V1ReplicaSetList;
 import io.kubernetes.client.models.V1RoleBindingList;
@@ -34,9 +37,14 @@ import io.kubernetes.client.models.V1ServiceList;
 import io.kubernetes.client.models.V1beta1CustomResourceDefinition;
 import io.kubernetes.client.models.V1beta1IngressList;
 import io.kubernetes.client.util.ClientBuilder;
-import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class K8sTestUtils {
+  public static final Logger logger = Logger.getLogger("OperatorIT", "OperatorIT");
+
   static {
     try {
       Configuration.setDefaultApiClient(ClientBuilder.defaultClient());
@@ -339,5 +347,95 @@ public class K8sTestUtils {
             null,
             Boolean.FALSE);
     assertEquals("Number of cluster role bindings", v1ClusterRoleBindingList.getItems().size(), 0);
+  }
+
+  /**
+   * Utility method to get the pods in a namespace filtered by given label.
+   *
+   * @param namespace - String namespace in which to look for the pods
+   * @param labelSelectors - String selector to filter the pods in the name space
+   * @return - V1PodList List of the pods in the given name space.
+   */
+  public V1PodList getPods(String namespace, String labelSelectors) {
+    V1PodList v1PodList = null;
+    try {
+      v1PodList =
+          coreV1Api.listNamespacedPod(
+              namespace,
+              Boolean.FALSE,
+              Boolean.FALSE.toString(),
+              null,
+              null,
+              labelSelectors,
+              null,
+              null,
+              null,
+              Boolean.FALSE);
+
+    } catch (ApiException ex) {
+      Logger.getLogger(K8sTestUtils.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    logger.log(
+        Level.INFO,
+        "Pods in namespace :{0} and label :{1} :{2}",
+        new Object[] {namespace, labelSelectors, v1PodList.getItems().size()});
+    return v1PodList;
+  }
+
+  /**
+   * Utility method to get a pod matching the given name.
+   *
+   * @param namespace - String namespace in which to look for the pods
+   * @param labelSelectors - String selector to filter the pods in the name space
+   * @param podName - String name of the pod to query for
+   * @return V1Pod object matching the podName
+   */
+  public V1Pod getPod(String namespace, String labelSelectors, String podName) {
+    List<V1Pod> pods = getPods(namespace, labelSelectors).getItems();
+    for (V1Pod pod : pods) {
+      if (pod.getMetadata().getName().equals(podName)) {
+        return pod;
+      }
+    }
+    logger.info("POD NOT FOUND");
+    return null;
+  }
+
+  /**
+   * Utility method to determine if a pod is in Terminating status It detects the Terminating status
+   * by looking at the metadata.getDeletionTimestamp field, a non null value means the pod is
+   * terminating.
+   *
+   * @param namespace - String namespace in which to look for the pods
+   * @param labelSelectors - String selector to filter the pods in the name space
+   * @param podName - String name of the pod to query for
+   * @return boolean true if the pod is in Terminating status
+   */
+  public boolean isPodTerminating(String namespace, String labelSelectors, String podName) {
+    V1ObjectMeta metadata;
+    V1Pod pod = getPod(namespace, labelSelectors, podName);
+    metadata = pod != null ? pod.getMetadata() : null;
+    if (metadata == null) {
+      return false;
+    }
+    if (metadata.getDeletionTimestamp() != null) {
+      logger.info(metadata.getDeletionTimestamp().toString());
+    } else {
+      logger.info("DeletionTimestamp is null, which means pod is Running");
+    }
+    return metadata.getDeletionTimestamp() != null;
+  }
+
+  /**
+   * Utility method to determine if a pod is in Running status It detects the Running status by
+   * looking at the metadata.getDeletionTimestamp field, a null value means the pod is Running.
+   *
+   * @param namespace - String namespace in which to look for the pods
+   * @param labelSelectors - String selector to filter the pods in the name space
+   * @param podName - String name of the pod to query for
+   * @return boolean true if the pod is in Terminating status
+   */
+  public boolean isPodRunning(String namespace, String labelSelectors, String podName) {
+    return !isPodTerminating(namespace, labelSelectors, podName);
   }
 }

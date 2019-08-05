@@ -7,6 +7,8 @@ package oracle.kubernetes.operator.wlsconfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import oracle.kubernetes.operator.helpers.LegalNames;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -22,114 +24,48 @@ public class WlsServerConfig {
   Integer adminPort;
   List<NetworkAccessPoint> networkAccessPoints;
 
-  public WlsServerConfig() {}
-
-  /**
-   * Return the name of this WLS server.
-   *
-   * @return The name of this WLS server
-   */
-  public String getName() {
-    return name;
+  public WlsServerConfig() {
   }
 
   /**
-   * Return the configured listen port of this WLS server.
+   * Creates a server configuration.
    *
-   * @return The configured listen port of this WLS server
+   * @param name the server name
+   * @param listenAddress the listen address
+   * @param listenPort the listen port
    */
-  public Integer getListenPort() {
-    return listenPort;
-  }
-
-  /**
-   * Return the configured listen address of this WLS server.
-   *
-   * @return The configured listen address of this WLS server
-   */
-  public String getListenAddress() {
-    return listenAddress;
-  }
-
-  /**
-   * Return the configured SSL listen port of this WLS server.
-   *
-   * @return The configured SSL listen port of this WLS server
-   */
-  public Integer getSslListenPort() {
-    return sslListenPort;
-  }
-
-  /**
-   * Return whether the SSL listen port is configured to be enabled or not.
-   *
-   * @return True if the SSL listen port should be enabled, false otherwise
-   */
-  public boolean isSslPortEnabled() {
-    return sslListenPort != null;
-  }
-
-  /**
-   * Return the machine name configured for this WLS server.
-   *
-   * @return The configured machine name for this WLS server
-   */
-  public String getMachineName() {
-    return machineName;
-  }
-
-  /**
-   * Returns an array containing all network access points configured in this WLS server.
-   *
-   * @return An array of NetworkAccessPoint containing configured network access points in this WLS
-   *     server. If there are no network access points configured in this server, an empty array is
-   *     returned.
-   */
-  public List<NetworkAccessPoint> getNetworkAccessPoints() {
-    return networkAccessPoints;
-  }
-
-  public void addNetworkAccessPoint(NetworkAccessPoint networkAccessPoint) {
-    if (networkAccessPoints == null) networkAccessPoints = new ArrayList<>();
-    networkAccessPoints.add(networkAccessPoint);
-  }
-
-  public WlsServerConfig addNetworkAccessPoint(String name, int listenPort) {
-    addNetworkAccessPoint(new NetworkAccessPoint(name, "TCP", listenPort, null));
-    return this;
-  }
-
-  public WlsServerConfig setAdminPort(int adminPort) {
-    this.adminPort = adminPort;
-    return this;
-  }
-
-  public String getClusterName() {
-    return this.clusterName;
-  }
-
-  public void setClusterName(String clusterName) {
-    this.clusterName = clusterName;
-  }
-
-  public Integer getAdminPort() {
-    return adminPort;
-  }
-
-  public void setAdminPort(Integer adminPort) {
-    this.adminPort = adminPort;
-  }
-
-  public void setListenPort(Integer listenPort) {
+  public WlsServerConfig(String name, String listenAddress, int listenPort) {
+    this.name = name;
+    this.listenAddress = listenAddress;
     this.listenPort = listenPort;
   }
 
-  public void setSslListenPort(Integer listenPort) {
-    this.sslListenPort = listenPort;
-  }
-
-  public boolean isAdminPortEnabled() {
-    return adminPort != null;
+  /**
+   * Construct a WlsServerConfig object using values provided.
+   *
+   * @param name Name of the WLS server
+   * @param listenAddress Configured listen address for this WLS server
+   * @param machineName Configured machine name for this WLS server
+   * @param listenPort Configured listen port for this WLS server
+   * @param sslListenPort Configured SSL listen port for this WLS server
+   * @param adminPort Configured domain wide administration port
+   * @param networkAccessPoints List of NetworkAccessPoint containing channels configured for this
+   */
+  public WlsServerConfig(
+      String name,
+      String listenAddress,
+      String machineName,
+      Integer listenPort,
+      Integer sslListenPort,
+      Integer adminPort,
+      List<NetworkAccessPoint> networkAccessPoints) {
+    this.name = name;
+    this.listenAddress = listenAddress;
+    this.machineName = machineName;
+    this.listenPort = listenPort;
+    this.sslListenPort = sslListenPort;
+    this.adminPort = adminPort;
+    this.networkAccessPoints = networkAccessPoints;
   }
 
   /**
@@ -172,34 +108,6 @@ public class WlsServerConfig {
         sslListenPort,
         (Integer) serverConfigMap.get("adminPort"),
         networkAccessPoints);
-  }
-
-  /**
-   * Construct a WlsServerConfig object using values provided.
-   *
-   * @param name Name of the WLS server
-   * @param listenAddress Configured listen address for this WLS server
-   * @param machineName Configured machine name for this WLS server
-   * @param listenPort Configured listen port for this WLS server
-   * @param sslListenPort Configured SSL listen port for this WLS server
-   * @param adminPort Configured domain wide administration port
-   * @param networkAccessPoints List of NetworkAccessPoint containing channels configured for this
-   */
-  public WlsServerConfig(
-      String name,
-      String listenAddress,
-      String machineName,
-      Integer listenPort,
-      Integer sslListenPort,
-      Integer adminPort,
-      List<NetworkAccessPoint> networkAccessPoints) {
-    this.name = name;
-    this.listenAddress = listenAddress;
-    this.machineName = machineName;
-    this.listenPort = listenPort;
-    this.sslListenPort = sslListenPort;
-    this.adminPort = adminPort;
-    this.networkAccessPoints = networkAccessPoints;
   }
 
   /**
@@ -249,15 +157,6 @@ public class WlsServerConfig {
   }
 
   /**
-   * Whether this server is a dynamic server, ie, not statically configured.
-   *
-   * @return True if this server is a dynamic server, false if this server is configured statically
-   */
-  public boolean isDynamicServer() {
-    return false;
-  }
-
-  /**
    * Return the list of configuration attributes to be retrieved from the REST search request to the
    * WLS admin server. The value would be used for constructing the REST POST request.
    *
@@ -272,7 +171,7 @@ public class WlsServerConfig {
         + "      children: { "
         + "        SSL: { "
         + "          fields: [ "
-        + getSSLSearchFields()
+        + getSslSearchFields()
         + " ], "
         + "          links: [] "
         + "        }, "
@@ -303,8 +202,207 @@ public class WlsServerConfig {
    * @return A string containing SSL fields that should be retrieved from the WLS REST request, in a
    *     format that can be used in the REST request payload
    */
-  private static String getSSLSearchFields() {
+  private static String getSslSearchFields() {
     return "'enabled', 'listenPort'";
+  }
+
+  /**
+   * Set the listen address for this server configuration.
+   *
+   * @param listenAddress the listen address
+   * @return this object
+   */
+  public WlsServerConfig withListenAddress(String listenAddress) {
+    this.listenAddress = listenAddress;
+    return this;
+  }
+
+  /**
+   * Return the name of this WLS server.
+   *
+   * @return The name of this WLS server
+   */
+  public String getName() {
+    return name;
+  }
+
+  /**
+   * Return the configured listen port of this WLS server.
+   *
+   * @return The configured listen port of this WLS server
+   */
+  public Integer getListenPort() {
+    return listenPort;
+  }
+
+  public void setListenPort(Integer listenPort) {
+    this.listenPort = listenPort;
+  }
+
+  /**
+   * Return the configured listen address of this WLS server.
+   *
+   * @return The configured listen address of this WLS server
+   */
+  public String getListenAddress() {
+    return listenAddress;
+  }
+
+  /**
+   * Return the configured SSL listen port of this WLS server.
+   *
+   * @return The configured SSL listen port of this WLS server
+   */
+  public Integer getSslListenPort() {
+    return sslListenPort;
+  }
+
+  public void setSslListenPort(Integer listenPort) {
+    this.sslListenPort = listenPort;
+  }
+
+  /**
+   * Return whether the SSL listen port is configured to be enabled or not.
+   *
+   * @return True if the SSL listen port should be enabled, false otherwise
+   */
+  public boolean isSslPortEnabled() {
+    return sslListenPort != null;
+  }
+
+  /**
+   * Return the machine name configured for this WLS server.
+   *
+   * @return The configured machine name for this WLS server
+   */
+  public String getMachineName() {
+    return machineName;
+  }
+
+  /**
+   * Returns an array containing all network access points configured in this WLS server.
+   *
+   * @return An array of NetworkAccessPoint containing configured network access points in this WLS
+   *     server. If there are no network access points configured in this server, an empty array is
+   *     returned.
+   */
+  public List<NetworkAccessPoint> getNetworkAccessPoints() {
+    return networkAccessPoints;
+  }
+
+  public void addNetworkAccessPoint(NetworkAccessPoint networkAccessPoint) {
+    if (networkAccessPoints == null) networkAccessPoints = new ArrayList<>();
+    networkAccessPoints.add(networkAccessPoint);
+  }
+
+  public WlsServerConfig addNetworkAccessPoint(String name, int listenPort) {
+    addNetworkAccessPoint(new NetworkAccessPoint(name, "TCP", listenPort, null));
+    return this;
+  }
+
+  public Integer getAdminPort() {
+    return adminPort;
+  }
+
+  public void setAdminPort(Integer adminPort) {
+    this.adminPort = adminPort;
+  }
+
+  public WlsServerConfig setAdminPort(int adminPort) {
+    this.adminPort = adminPort;
+    return this;
+  }
+
+  public String getClusterName() {
+    return this.clusterName;
+  }
+
+  public void setClusterName(String clusterName) {
+    this.clusterName = clusterName;
+  }
+
+  public boolean isAdminPortEnabled() {
+    return adminPort != null;
+  }
+
+  public String getAdminProtocolChannelName() {
+    String adminProtocolChannel = null;
+    if (networkAccessPoints != null) {
+      for (NetworkAccessPoint nap : networkAccessPoints) {
+        if (nap.isAdminProtocol()) {
+          adminProtocolChannel = LegalNames.toDns1123LegalName(nap.getName());
+          break;
+        }
+      }
+    }
+    if (adminProtocolChannel == null) {
+      if (adminPort != null) {
+        adminProtocolChannel = "default-admin";
+      } else if (sslListenPort != null) {
+        adminProtocolChannel = "default-secure";
+      } else if (listenPort != null) {
+        adminProtocolChannel = "default";
+      }
+    }
+
+    return adminProtocolChannel;
+  }
+
+  public Integer getLocalAdminProtocolChannelPort() {
+    Integer adminProtocolPort = null;
+    if (networkAccessPoints != null) {
+      for (NetworkAccessPoint nap : networkAccessPoints) {
+        if (nap.isAdminProtocol()) {
+          adminProtocolPort = nap.getListenPort();
+          break;
+        }
+      }
+    }
+    if (adminProtocolPort == null) {
+      if (adminPort != null) {
+        adminProtocolPort = adminPort;
+      } else if (sslListenPort != null) {
+        adminProtocolPort = sslListenPort;
+      } else if (listenPort != null) {
+        adminProtocolPort = listenPort;
+      }
+    }
+
+    return adminProtocolPort;
+  }
+
+  public boolean isLocalAdminProtocolChannelSecure() {
+    boolean adminProtocolPortSecure = false;
+    boolean adminProtocolPortFound = false;
+    if (networkAccessPoints != null) {
+      for (NetworkAccessPoint nap : networkAccessPoints) {
+        if (nap.isAdminProtocol()) {
+          adminProtocolPortFound = true;
+          adminProtocolPortSecure = true;
+          break;
+        }
+      }
+    }
+    if (!adminProtocolPortFound) {
+      if (adminPort != null) {
+        adminProtocolPortSecure = true;
+      } else if (sslListenPort != null) {
+        adminProtocolPortSecure = true;
+      } else if (listenPort != null) {
+        adminProtocolPortSecure = false;
+      }
+    }
+
+    return adminProtocolPortSecure;
+  }
+
+  /**
+   * Whether this server is a dynamic server, ie, not statically configured.
+   *
+   * @return True if this server is a dynamic server, false if this server is configured statically
+   */
+  public boolean isDynamicServer() {
+    return false;
   }
 
   @Override

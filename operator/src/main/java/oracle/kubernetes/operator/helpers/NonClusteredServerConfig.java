@@ -1,12 +1,13 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
 
+import java.util.List;
+
 import io.kubernetes.client.models.V1EnvVar;
 import io.kubernetes.client.models.V1LocalObjectReference;
-import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -19,45 +20,9 @@ public class NonClusteredServerConfig extends ServerConfig {
 
   private String nonClusteredServerStartPolicy;
 
-  /**
-   * Whether this non-clustered server should be started.
-   *
-   * @return non-clustered server start policy
-   */
-  public String getNonClusteredServerStartPolicy() {
-    return nonClusteredServerStartPolicy;
-  }
-
-  /**
-   * Whether this non-clustered server should be started.
-   *
-   * @param nonClusteredServerStartPolicy non-clustered server start policy
-   */
-  public void setNonClusteredServerStartPolicy(String nonClusteredServerStartPolicy) {
-    this.nonClusteredServerStartPolicy = nonClusteredServerStartPolicy;
-  }
-
-  /**
-   * Whether this non-clustered server should be started.
-   *
-   * @param nonClusteredServerStartPolicy non-clustered server start policy
-   * @return this
-   */
-  public NonClusteredServerConfig withNonClusteredServerStartPolicy(
-      String nonClusteredServerStartPolicy) {
-    this.nonClusteredServerStartPolicy = nonClusteredServerStartPolicy;
-    return this;
-  }
-
   @Override
   public NonClusteredServerConfig withServerName(String serverName) {
     super.withServerName(serverName);
-    return this;
-  }
-
-  @Override
-  public NonClusteredServerConfig withStartedServerState(String startedServerState) {
-    super.withStartedServerState(startedServerState);
     return this;
   }
 
@@ -95,32 +60,6 @@ public class NonClusteredServerConfig extends ServerConfig {
   public NonClusteredServerConfig withImagePullSecrets(
       List<V1LocalObjectReference> imagePullSecrets) {
     super.withImagePullSecrets(imagePullSecrets);
-    return this;
-  }
-
-  @Override
-  public NonClusteredServerConfig withShutdownPolicy(String shutdownPolicy) {
-    super.withShutdownPolicy(shutdownPolicy);
-    return this;
-  }
-
-  @Override
-  public NonClusteredServerConfig withGracefulShutdownTimeout(int gracefulShutdownTimeout) {
-    super.withGracefulShutdownTimeout(gracefulShutdownTimeout);
-    return this;
-  }
-
-  @Override
-  public NonClusteredServerConfig withGracefulShutdownIgnoreSessions(
-      boolean gracefulShutdownIgnoreSessions) {
-    super.withGracefulShutdownIgnoreSessions(gracefulShutdownIgnoreSessions);
-    return this;
-  }
-
-  @Override
-  public NonClusteredServerConfig withGracefulShutdownWaitForSessions(
-      boolean gracefulShutdownWaitForSessions) {
-    super.withGracefulShutdownWaitForSessions(gracefulShutdownWaitForSessions);
     return this;
   }
 

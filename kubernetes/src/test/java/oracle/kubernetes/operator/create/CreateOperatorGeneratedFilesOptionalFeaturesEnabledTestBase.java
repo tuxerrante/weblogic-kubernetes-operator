@@ -1,4 +1,4 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -31,6 +31,7 @@ public abstract class CreateOperatorGeneratedFilesOptionalFeaturesEnabledTestBas
             .newOperatorValues()
             .setupExternalRestEnabled()
             .enableDebugging()
+            .suspendOnDebugStartup("true")
             .elkIntegrationEnabled("true")
             .weblogicOperatorImagePullSecretName("test-operator-image-pull-secret-name"));
   }
@@ -55,10 +56,9 @@ public abstract class CreateOperatorGeneratedFilesOptionalFeaturesEnabledTestBas
     ExtensionsV1beta1Deployment expected = super.getExpectedWeblogicOperatorDeployment();
     V1Container operatorContainer =
         expected.getSpec().getTemplate().getSpec().getContainers().get(0);
-    operatorContainer
-        .addVolumeMountsItem(newVolumeMount().name("log-dir").mountPath("/logs").readOnly(false))
-        .addEnvItem(
-            newEnvVar().name("REMOTE_DEBUG_PORT").value(getInputs().getInternalDebugHttpPort()));
+    operatorContainer.addVolumeMountsItem(
+        newVolumeMount().name("log-dir").mountPath("/logs").readOnly(false));
+    expectRemoteDebug(operatorContainer, "y");
     expected
         .getSpec()
         .getTemplate()

@@ -4,17 +4,18 @@
 
 package oracle.kubernetes.operator.helpers;
 
-import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
-
-import io.kubernetes.client.models.V1ObjectMeta;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.json.JsonPatchBuilder;
+
+import io.kubernetes.client.models.V1ObjectMeta;
 import oracle.kubernetes.operator.LabelConstants;
 import org.apache.commons.collections.MapUtils;
 import org.joda.time.DateTime;
+
+import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 
 public class KubernetesUtils {
 
@@ -134,7 +135,7 @@ public class KubernetesUtils {
     return Integer.parseInt(metadata.getResourceVersion());
   }
 
-  public static V1ObjectMeta withOperatorLabels(V1ObjectMeta meta, String uid) {
+  public static V1ObjectMeta withOperatorLabels(String uid, V1ObjectMeta meta) {
     return meta.putLabelsItem(LabelConstants.DOMAINUID_LABEL, uid)
         .putLabelsItem(CREATEDBYOPERATOR_LABEL, "true");
   }

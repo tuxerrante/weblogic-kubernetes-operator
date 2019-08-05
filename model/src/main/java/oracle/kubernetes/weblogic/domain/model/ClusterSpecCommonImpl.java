@@ -4,9 +4,10 @@
 
 package oracle.kubernetes.weblogic.domain.model;
 
-import io.kubernetes.client.models.V1Container;
 import java.util.List;
 import java.util.Map;
+
+import io.kubernetes.client.models.V1Container;
 
 public class ClusterSpecCommonImpl extends ClusterSpec {
   private final Cluster cluster;
@@ -18,6 +19,11 @@ public class ClusterSpecCommonImpl extends ClusterSpec {
 
   private Cluster getBaseConfiguration(Cluster cluster) {
     return cluster != null ? cluster.getConfiguration() : new Cluster();
+  }
+
+  @Override
+  public Boolean isPrecreateServerService() {
+    return cluster.isPrecreateServerService();
   }
 
   @Override
@@ -48,5 +54,10 @@ public class ClusterSpecCommonImpl extends ClusterSpec {
   @Override
   public List<V1Container> getContainers() {
     return cluster.getContainers();
+  }
+
+  @Override
+  public Shutdown getShutdown() {
+    return cluster.getShutdown();
   }
 }

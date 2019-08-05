@@ -4,12 +4,16 @@
 
 package oracle.kubernetes.operator;
 
-import static com.meterware.simplestub.Stub.createStub;
-import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
-import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import com.meterware.pseudoserver.HttpUserAgentTest;
 import com.meterware.simplestub.Memento;
@@ -19,18 +23,10 @@ import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1Pod;
 import io.kubernetes.client.models.V1PodCondition;
 import io.kubernetes.client.models.V1PodStatus;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import oracle.kubernetes.TestUtils;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.helpers.ServerKubernetesObjects;
+import oracle.kubernetes.operator.helpers.LegalNames;
+import oracle.kubernetes.operator.helpers.TuningParametersStub;
 import oracle.kubernetes.operator.utils.KubernetesExec;
 import oracle.kubernetes.operator.utils.KubernetesExecFactory;
 import oracle.kubernetes.operator.work.FiberTestSupport;
@@ -45,14 +41,22 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.meterware.simplestub.Stub.createStub;
+import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
+import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+
 public class ServerStatusReaderTest extends HttpUserAgentTest {
   private static final String NS = "namespace";
-  private FiberTestSupport testSupport = new FiberTestSupport();
-  private List<Memento> mementos = new ArrayList<>();
+  private static final String UID = "uid";
   private final TerminalStep endStep = new TerminalStep();
   private final KubernetesExecFactoryFake execFactory = new KubernetesExecFactoryFake();
   private final ReadServerHealthStepFactoryFake stepFactory = new ReadServerHealthStepFactoryFake();
-
+  private FiberTestSupport testSupport = new FiberTestSupport();
+  private List<Memento> mementos = new ArrayList<>();
   private Domain domain =
       new Domain().withMetadata(new V1ObjectMeta().namespace(NS)).withSpec(new DomainSpec());
   private DomainPresenceInfo info = new DomainPresenceInfo(domain);
@@ -62,16 +66,19 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
     mementos.add(TestUtils.silenceOperatorLogger());
     mementos.add(StaticStubSupport.install(ServerStatusReader.class, "EXEC_FACTORY", execFactory));
     mementos.add(StaticStubSupport.install(ServerStatusReader.class, "STEP_FACTORY", stepFactory));
+    mementos.add(TuningParametersStub.install());
 
-    info.getServers().putIfAbsent("server1", createServerKubernetesObjects("server1"));
-    info.getServers().putIfAbsent("server2", createServerKubernetesObjects("server2"));
     testSupport.addDomainPresenceInfo(info);
   }
 
-  private ServerKubernetesObjects createServerKubernetesObjects(String serverName) {
-    ServerKubernetesObjects sko = new ServerKubernetesObjects();
-    sko.getPod().set(new V1Pod().metadata(new V1ObjectMeta().namespace(NS).name(serverName)));
-    return sko;
+  private V1Pod createPod(String serverName) {
+    return new V1Pod().metadata(withNames(new V1ObjectMeta().namespace(NS), serverName));
+  }
+
+  private V1ObjectMeta withNames(V1ObjectMeta objectMeta, String serverName) {
+    return objectMeta
+        .name(LegalNames.toPodName(UID, serverName))
+        .putLabelsItem(LabelConstants.SERVERNAME_LABEL, serverName);
   }
 
   @After
@@ -83,8 +90,6 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
 
   @Test
   public void whenNoServersPresent_packetContainsEmptyStateAndHealthMaps() {
-    info.getServers().clear();
-
     Packet packet =
         testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
 
@@ -94,8 +99,6 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
 
   @Test
   public void whenServersLackPods_packetContainsEmptyStateAndHealthMaps() {
-    for (ServerKubernetesObjects sko : info.getServers().values()) sko.getPod().set(null);
-
     Packet packet =
         testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
 
@@ -105,6 +108,8 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
 
   @Test
   public void whenServerPodsReturnNodeManagerStatus_recordInStateMap() {
+    info.setServerPod("server1", createPod("server1"));
+    info.setServerPod("server2", createPod("server2"));
     execFactory.defineResponse("server1", "server1 status");
     execFactory.defineResponse("server2", "server2 status");
 
@@ -116,6 +121,19 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
     assertThat(serverStates, hasEntry("server2", "server2 status"));
   }
 
+  @Test
+  public void createDomainStatusReaderStep_initializesRemainingServersHealthRead_withNumServers() {
+    info.setServerPod("server1", createPod("server1"));
+    info.setServerPod("server2", createPod("server2"));
+
+    Packet packet =
+        testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
+
+    assertThat(
+        ((AtomicInteger) packet.get(ProcessingConstants.REMAINING_SERVERS_HEALTH_TO_READ)).get(),
+        is(2));
+  }
+
   @SuppressWarnings("unchecked")
   private Map<String, String> getServerStates(Packet packet) {
     return (Map<String, String>) packet.get(SERVER_STATE_MAP);
@@ -123,24 +141,16 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
 
   @Test
   public void whenPodNotReadyAndHasLastKnownState_recordInStateMap() {
-    info.getServers().get("server1").getLastKnownStatus().set("not ready yet");
+    info.setServerPod("server1", createPod("server1"));
+    info.updateLastKnownServerStatus("server1", "not ready yet");
+
+    execFactory.defineResponse("server1", "still not ready yet");
 
     Packet packet =
         testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
 
     Map<String, String> serverStates = getServerStates(packet);
-    assertThat(serverStates, hasEntry("server1", "not ready yet"));
-  }
-
-  @Test
-  public void whenPodIsReady_recordInStateMap() {
-    setReadyStatus(info.getServers().get("server1").getPod().get());
-
-    Packet packet =
-        testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
-
-    Map<String, String> serverStates = getServerStates(packet);
-    assertThat(serverStates, hasEntry("server1", WebLogicConstants.RUNNING_STATE));
+    assertThat(serverStates, hasEntry("server1", "still not ready yet"));
   }
 
   private void setReadyStatus(V1Pod pod) {
@@ -152,7 +162,10 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
 
   @Test
   public void whenPodIsReady_startHealthStepForIt() {
-    setReadyStatus(info.getServers().get("server1").getPod().get());
+    info.setServerPod("server1", createPod("server1"));
+    setReadyStatus(info.getServerPod("server1"));
+
+    execFactory.defineResponse("server1", "RUNNING");
 
     testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
 
@@ -177,8 +190,8 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
   static class KubernetesExecFactoryFake implements KubernetesExecFactory {
     private Map<String, String> responses = new HashMap<>();
 
-    void defineResponse(String podName, String response) {
-      responses.put(podName, response);
+    void defineResponse(String serverName, String response) {
+      responses.put(LegalNames.toPodName(UID, serverName), response);
     }
 
     @Override
@@ -214,6 +227,7 @@ public class ServerStatusReaderTest extends HttpUserAgentTest {
     }
 
     @Override
-    public void destroy() {}
+    public void destroy() {
+    }
   }
 }

@@ -1,15 +1,38 @@
-// Copyright 2017, 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.wlsconfig;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+
+import com.meterware.simplestub.Memento;
+import oracle.kubernetes.TestUtils;
+import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
+import oracle.kubernetes.weblogic.domain.ClusterConfigurator;
+import oracle.kubernetes.weblogic.domain.DomainConfigurator;
+import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
+import oracle.kubernetes.weblogic.domain.model.Domain;
+import oracle.kubernetes.weblogic.domain.model.DomainSpec;
+import org.hamcrest.Description;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static oracle.kubernetes.LogMatcher.containsWarning;
 import static oracle.kubernetes.operator.logging.MessageKeys.NO_WLS_SERVER_IN_CLUSTER;
 import static oracle.kubernetes.operator.logging.MessageKeys.REPLICA_MORE_THAN_WLS_SERVERS;
+import static oracle.kubernetes.operator.wlsconfig.WlsDomainConfigTest.WlsServerConfigMatcher.withServerConfig;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -18,49 +41,332 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import oracle.kubernetes.TestUtils;
-import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
-import oracle.kubernetes.weblogic.domain.ClusterConfigurator;
-import oracle.kubernetes.weblogic.domain.DomainConfigurator;
-import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
-import oracle.kubernetes.weblogic.domain.model.Domain;
-import oracle.kubernetes.weblogic.domain.model.DomainSpec;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-/** Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved. */
+/** Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved. */
 public class WlsDomainConfigTest {
-
-  private Domain domain = new Domain().withSpec(new DomainSpec());
-  private DomainSpec domainSpec = domain.getSpec();
-  private DomainConfigurator configurator = DomainConfiguratorFactory.forDomain(domain);
-  private WlsDomainConfig wlsDomainConfig = new WlsDomainConfig(null);
 
   // The log messages to be checked during this test
   private static final String[] LOG_KEYS = {
     NO_WLS_SERVER_IN_CLUSTER, REPLICA_MORE_THAN_WLS_SERVERS
   };
-
+  private static final String JSON_STRING_MIXED_CLUSTER =
+      "{     \"name\": \"base_domain\",\n "
+          + "\"servers\": {\"items\": [\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"\",\n"
+          + "        \"name\": \"AdminServer\",\n"
+          + "        \"listenPort\": 8001,\n"
+          + "        \"cluster\": null,\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-0.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-0\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": [\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3\",\n"
+          + "                \"name\": \"Channel-0\",\n"
+          + "                \"listenPort\": 8012\n"
+          + "            },\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3\",\n"
+          + "                \"name\": \"Channel-1\",\n"
+          + "                \"listenPort\": 8013\n"
+          + "            },\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3s\",\n"
+          + "                \"name\": \"Channel-2\",\n"
+          + "                \"listenPort\": 8014\n"
+          + "            }\n"
+          + "        ]},\n"
+          + "            \"SSL\": {\n"
+          + "                \"enabled\": true,\n"
+          + "                \"listenPort\": 8101\n"
+          + "            }\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-1.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-1\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-2.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-2\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-3.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-3\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-4.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-4\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    }\n"
+          + "    ]},\n"
+          + "\"serverTemplates\": {\"items\": [\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"domain1-${serverName}\",\n"
+          + "        \"name\": \"server-template-1\",\n"
+          + "        \"listenPort\": 8050,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": [\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3\",\n"
+          + "                \"name\": \"DChannel-0\",\n"
+          + "                \"listenPort\": 9010\n"
+          + "            },\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3s\",\n"
+          + "                \"name\": \"DChannel-1\",\n"
+          + "                \"listenPort\": 9020\n"
+          + "            }\n"
+          + "        ]},\n"
+          + "            \"SSL\": {\n"
+          + "                \"enabled\": true,\n"
+          + "                \"listenPort\": 8150\n"
+          + "            }\n"
+          + "    }\n"
+          + "    ]},\n"
+          + "    \"clusters\": {\"items\": [\n"
+          + "        {\n"
+          + "            \"name\": \"DockerCluster\",\n"
+          + "            \"dynamicServers\": {\n"
+          + "                \"dynamicClusterSize\": 2,\n"
+          + "                \"maxDynamicClusterSize\": 8,\n"
+          + "                \"serverNamePrefix\": \"dynamic-\",\n"
+          + "                \"dynamicServerNames\": [\n"
+          + "                    \"dynamic-1\",\n"
+          + "                    \"dynamic-2\"\n"
+          + "                ],\n"
+          + "                \"calculatedListenPorts\": true,\n"
+          + "                \"serverTemplate\": [\n"
+          + "                    \"serverTemplates\",\n"
+          + "                    \"server-template-1\"\n"
+          + "                ]\n"
+          + "            }\n"
+          + "        }"
+          + "    ]}\n"
+          + "}";
+  private static final String JSON_STRING_1_CLUSTER =
+      "{     \"name\": \"base_domain\",\n "
+          + "\"servers\": {\"items\": [\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"\",\n"
+          + "        \"name\": \"AdminServer\",\n"
+          + "        \"listenPort\": 8001,\n"
+          + "        \"cluster\": null,\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-0.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-0\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": [\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3\",\n"
+          + "                \"name\": \"Channel-0\",\n"
+          + "                \"listenPort\": 8012\n"
+          + "            },\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3\",\n"
+          + "                \"name\": \"Channel-1\",\n"
+          + "                \"listenPort\": 8013\n"
+          + "            },\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3s\",\n"
+          + "                \"name\": \"Channel-2\",\n"
+          + "                \"listenPort\": 8014\n"
+          + "            }\n"
+          + "        ]},\n"
+          + "            \"SSL\": {\n"
+          + "                \"enabled\": true,\n"
+          + "                \"listenPort\": 8101\n"
+          + "            }\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-1.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-1\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-2.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-2\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-3.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-3\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-4.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-4\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    }\n"
+          + "  ]}, "
+          + "    \"machines\": {\"items\": [\n"
+          + "        {\n"
+          + "            \"name\": \"domain1-machine1\",\n"
+          + "            \"nodeManager\": {\n"
+          + "                \"NMType\": \"Plain\",\n"
+          + "                \"listenAddress\": \"domain1-managed-server1\",\n"
+          + "                \"name\": \"domain1-machine1\",\n"
+          + "                \"listenPort\": 5556\n"
+          + "            }\n"
+          + "        },\n"
+          + "        {\n"
+          + "            \"name\": \"domain1-machine2\",\n"
+          + "            \"nodeManager\": {\n"
+          + "                \"NMType\": \"SSL\",\n"
+          + "                \"listenAddress\": \"domain1-managed-server2\",\n"
+          + "                \"name\": \"domain1-machine2\",\n"
+          + "                \"listenPort\": 5556\n"
+          + "            }\n"
+          + "        }\n"
+          + "    ]}\n"
+          + "}";
+  private static final String JSON_STRING_2_CLUSTERS =
+      "{\"servers\": {\"items\": [\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"\",\n"
+          + "        \"name\": \"AdminServer\",\n"
+          + "        \"listenPort\": 8001,\n"
+          + "        \"cluster\": null,\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-0.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-0\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": [\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3\",\n"
+          + "                \"name\": \"Channel-0\",\n"
+          + "                \"listenPort\": 8012\n"
+          + "            },\n"
+          + "            {\n"
+          + "                \"protocol\": \"t3s\",\n"
+          + "                \"name\": \"Channel-1\",\n"
+          + "                \"listenPort\": 8013\n"
+          + "            }\n"
+          + "        ]}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-1.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-1\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-2.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-2\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-3.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-3\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster2\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    },\n"
+          + "    {\n"
+          + "        \"listenAddress\": \"ms-4.wls-subdomain.default.svc.cluster.local\",\n"
+          + "        \"name\": \"ms-4\",\n"
+          + "        \"listenPort\": 8011,\n"
+          + "        \"cluster\": [\n"
+          + "            \"clusters\",\n"
+          + "            \"DockerCluster2\"\n"
+          + "        ],\n"
+          + "        \"networkAccessPoints\": {\"items\": []}\n"
+          + "    }\n"
+          + "]}}";
+  private Domain domain = new Domain().withSpec(new DomainSpec());
+  private DomainConfigurator configurator = DomainConfiguratorFactory.forDomain(domain);
+  private WlsDomainConfig wlsDomainConfig = new WlsDomainConfig(null);
   private List<LogRecord> logRecords = new ArrayList<>();
-  private TestUtils.ConsoleHandlerMemento consoleControl;
+  private List<Memento> mementos = new ArrayList<>();
 
   @Before
   public void setup() {
-    consoleControl =
+    mementos.add(
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, LOG_KEYS)
-            .withLogLevel(Level.WARNING);
+            .withLogLevel(Level.WARNING));
+    mementos.add(TestUtils.silenceJsonPathLogger());
   }
 
   @After
   public void tearDown() {
-    consoleControl.revert();
+    for (Memento memento : mementos) memento.revert();
   }
 
   @Test
@@ -137,17 +443,17 @@ public class WlsDomainConfigTest {
     Map<String, WlsMachineConfig> wlsMachineConfigList = wlsDomainConfig.getMachineConfigs();
     assertEquals(2, wlsMachineConfigList.size());
 
-    WlsMachineConfig domain1_machine1 = wlsDomainConfig.getMachineConfig("domain1-machine1");
-    assertEquals("domain1-machine1", domain1_machine1.getName());
-    assertEquals(new Integer(5556), domain1_machine1.getNodeManagerListenPort());
-    assertEquals("domain1-managed-server1", domain1_machine1.getNodeManagerListenAddress());
-    assertEquals("Plain", domain1_machine1.getNodeManagerType());
+    WlsMachineConfig domain1machine1 = wlsDomainConfig.getMachineConfig("domain1-machine1");
+    assertEquals("domain1-machine1", domain1machine1.getName());
+    assertEquals(new Integer(5556), domain1machine1.getNodeManagerListenPort());
+    assertEquals("domain1-managed-server1", domain1machine1.getNodeManagerListenAddress());
+    assertEquals("Plain", domain1machine1.getNodeManagerType());
 
-    WlsMachineConfig domain1_machine2 = wlsDomainConfig.getMachineConfig("domain1-machine2");
-    assertEquals("domain1-machine2", domain1_machine2.getName());
-    assertEquals(new Integer(5556), domain1_machine2.getNodeManagerListenPort());
-    assertEquals("domain1-managed-server2", domain1_machine2.getNodeManagerListenAddress());
-    assertEquals("SSL", domain1_machine2.getNodeManagerType());
+    WlsMachineConfig domain1machine2 = wlsDomainConfig.getMachineConfig("domain1-machine2");
+    assertEquals("domain1-machine2", domain1machine2.getName());
+    assertEquals(new Integer(5556), domain1machine2.getNodeManagerListenPort());
+    assertEquals("domain1-managed-server2", domain1machine2.getNodeManagerListenAddress());
+    assertEquals("SSL", domain1machine2.getNodeManagerType());
   }
 
   @Test
@@ -254,7 +560,7 @@ public class WlsDomainConfigTest {
   }
 
   @Test
-  public void verifySSLConfigsLoadedFromJsonString() {
+  public void verifySslConfigsLoadedFromJsonString() {
     createDomainConfig(JSON_STRING_1_CLUSTER);
 
     WlsServerConfig serverConfig = wlsDomainConfig.getServerConfig("ms-0");
@@ -427,307 +733,113 @@ public class WlsDomainConfigTest {
     return false;
   }
 
-  private final String JSON_STRING_MIXED_CLUSTER =
-      "{     \"name\": \"base_domain\",\n "
-          + "\"servers\": {\"items\": [\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"\",\n"
-          + "        \"name\": \"AdminServer\",\n"
-          + "        \"listenPort\": 8001,\n"
-          + "        \"cluster\": null,\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-0.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-0\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": [\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3\",\n"
-          + "                \"name\": \"Channel-0\",\n"
-          + "                \"listenPort\": 8012\n"
-          + "            },\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3\",\n"
-          + "                \"name\": \"Channel-1\",\n"
-          + "                \"listenPort\": 8013\n"
-          + "            },\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3s\",\n"
-          + "                \"name\": \"Channel-2\",\n"
-          + "                \"listenPort\": 8014\n"
-          + "            }\n"
-          + "        ]},\n"
-          + "            \"SSL\": {\n"
-          + "                \"enabled\": true,\n"
-          + "                \"listenPort\": 8101\n"
-          + "            }\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-1.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-1\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-2.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-2\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-3.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-3\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-4.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-4\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    }\n"
-          + "    ]},\n"
-          + "\"serverTemplates\": {\"items\": [\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"domain1-${serverName}\",\n"
-          + "        \"name\": \"server-template-1\",\n"
-          + "        \"listenPort\": 8050,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": [\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3\",\n"
-          + "                \"name\": \"DChannel-0\",\n"
-          + "                \"listenPort\": 9010\n"
-          + "            },\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3s\",\n"
-          + "                \"name\": \"DChannel-1\",\n"
-          + "                \"listenPort\": 9020\n"
-          + "            }\n"
-          + "        ]},\n"
-          + "            \"SSL\": {\n"
-          + "                \"enabled\": true,\n"
-          + "                \"listenPort\": 8150\n"
-          + "            }\n"
-          + "    }\n"
-          + "    ]},\n"
-          + "    \"clusters\": {\"items\": [\n"
-          + "        {\n"
-          + "            \"name\": \"DockerCluster\",\n"
-          + "            \"dynamicServers\": {\n"
-          + "                \"dynamicClusterSize\": 2,\n"
-          + "                \"maxDynamicClusterSize\": 8,\n"
-          + "                \"serverNamePrefix\": \"dynamic-\",\n"
-          + "                \"dynamicServerNames\": [\n"
-          + "                    \"dynamic-1\",\n"
-          + "                    \"dynamic-2\"\n"
-          + "                ],\n"
-          + "                \"calculatedListenPorts\": true,\n"
-          + "                \"serverTemplate\": [\n"
-          + "                    \"serverTemplates\",\n"
-          + "                    \"server-template-1\"\n"
-          + "                ]\n"
-          + "            }\n"
-          + "        }"
-          + "    ]}\n"
-          + "}";
+  @Test
+  public void whenTopologyGenerated_containsDomainValidFlag() {
+    WlsDomainConfig domainConfig = new WlsDomainConfig();
 
-  private final String JSON_STRING_1_CLUSTER =
-      "{     \"name\": \"base_domain\",\n "
-          + "\"servers\": {\"items\": [\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"\",\n"
-          + "        \"name\": \"AdminServer\",\n"
-          + "        \"listenPort\": 8001,\n"
-          + "        \"cluster\": null,\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-0.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-0\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": [\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3\",\n"
-          + "                \"name\": \"Channel-0\",\n"
-          + "                \"listenPort\": 8012\n"
-          + "            },\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3\",\n"
-          + "                \"name\": \"Channel-1\",\n"
-          + "                \"listenPort\": 8013\n"
-          + "            },\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3s\",\n"
-          + "                \"name\": \"Channel-2\",\n"
-          + "                \"listenPort\": 8014\n"
-          + "            }\n"
-          + "        ]},\n"
-          + "            \"SSL\": {\n"
-          + "                \"enabled\": true,\n"
-          + "                \"listenPort\": 8101\n"
-          + "            }\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-1.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-1\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-2.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-2\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-3.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-3\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-4.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-4\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    }\n"
-          + "  ]}, "
-          + "    \"machines\": {\"items\": [\n"
-          + "        {\n"
-          + "            \"name\": \"domain1-machine1\",\n"
-          + "            \"nodeManager\": {\n"
-          + "                \"NMType\": \"Plain\",\n"
-          + "                \"listenAddress\": \"domain1-managed-server1\",\n"
-          + "                \"name\": \"domain1-machine1\",\n"
-          + "                \"listenPort\": 5556\n"
-          + "            }\n"
-          + "        },\n"
-          + "        {\n"
-          + "            \"name\": \"domain1-machine2\",\n"
-          + "            \"nodeManager\": {\n"
-          + "                \"NMType\": \"SSL\",\n"
-          + "                \"listenAddress\": \"domain1-managed-server2\",\n"
-          + "                \"name\": \"domain1-machine2\",\n"
-          + "                \"listenPort\": 5556\n"
-          + "            }\n"
-          + "        }\n"
-          + "    ]}\n"
-          + "}";
+    assertThat(domainConfig.toTopology(), hasJsonPath("domainValid", equalTo("true")));
+  }
 
-  private final String JSON_STRING_2_CLUSTERS =
-      "{\"servers\": {\"items\": [\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"\",\n"
-          + "        \"name\": \"AdminServer\",\n"
-          + "        \"listenPort\": 8001,\n"
-          + "        \"cluster\": null,\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-0.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-0\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": [\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3\",\n"
-          + "                \"name\": \"Channel-0\",\n"
-          + "                \"listenPort\": 8012\n"
-          + "            },\n"
-          + "            {\n"
-          + "                \"protocol\": \"t3s\",\n"
-          + "                \"name\": \"Channel-1\",\n"
-          + "                \"listenPort\": 8013\n"
-          + "            }\n"
-          + "        ]}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-1.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-1\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-2.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-2\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-3.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-3\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster2\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    },\n"
-          + "    {\n"
-          + "        \"listenAddress\": \"ms-4.wls-subdomain.default.svc.cluster.local\",\n"
-          + "        \"name\": \"ms-4\",\n"
-          + "        \"listenPort\": 8011,\n"
-          + "        \"cluster\": [\n"
-          + "            \"clusters\",\n"
-          + "            \"DockerCluster2\"\n"
-          + "        ],\n"
-          + "        \"networkAccessPoints\": {\"items\": []}\n"
-          + "    }\n"
-          + "]}}";
+  @Test
+  public void whenTopologyGenerated_containsDomainName() {
+    WlsDomainConfig domainConfig = new WlsDomainConfig("test-domain");
+
+    assertThat(domainConfig.toTopology(), hasJsonPath("domain.name", equalTo("test-domain")));
+  }
+
+  @Test
+  public void whenTopologyGenerated_containsAdminServerName() {
+    WlsDomainConfig domainConfig =
+        new WlsDomainConfig("test-domain").withAdminServer("admin-server", "admin-host", 7001);
+
+    assertThat(
+        domainConfig.toTopology(), hasJsonPath("domain.adminServerName", equalTo("admin-server")));
+  }
+
+  @Test
+  public void whenTopologyGenerated_containsAdminServerSpec() {
+    WlsDomainConfig domainConfig =
+        new WlsDomainConfig("test-domain").withAdminServer("admin-server", "admin-host", 7001);
+
+    assertThat(
+        domainConfig.toTopology(),
+        hasJsonPath("domain.servers", withServerConfig("admin-server", "admin-host", 7001)));
+  }
+
+  @Test
+  public void whenYamlGenerated_containsClusterConfig() {
+    WlsDomainConfig domainConfig =
+        new WlsDomainConfig("test-domain").withCluster(new WlsClusterConfig("cluster1"));
+
+    assertThat(
+        domainConfig.toTopology(),
+        hasJsonPath("domain.configuredClusters[*].name", contains("cluster1")));
+  }
+
+  @Test
+  public void whenYamlGenerated_containsClusteredServerConfigs() {
+    WlsDomainConfig domainConfig =
+        new WlsDomainConfig("test-domain")
+            .withCluster(
+                new WlsClusterConfig("cluster1")
+                    .addServerConfig(new WlsServerConfig("ms1", "host1", 8001))
+                    .addServerConfig(new WlsServerConfig("ms2", "host2", 8001)));
+
+    assertThat(
+        domainConfig.toTopology(),
+        hasJsonPath(
+            "domain.configuredClusters[0].servers", withServerConfig("ms1", "host1", 8001)));
+    assertThat(
+        domainConfig.toTopology(),
+        hasJsonPath(
+            "domain.configuredClusters[0].servers", withServerConfig("ms2", "host2", 8001)));
+  }
+
+  @SuppressWarnings("unused")
+  static class WlsServerConfigMatcher
+      extends org.hamcrest.TypeSafeDiagnosingMatcher<
+          java.util.List<java.util.Map<String, Object>>> {
+    private String expectedName;
+    private String expectedAddress;
+    private int expectedPort;
+
+    private WlsServerConfigMatcher(String expectedName, String expectedAddress, int expectedPort) {
+      this.expectedName = expectedName;
+      this.expectedAddress = expectedAddress;
+      this.expectedPort = expectedPort;
+    }
+
+    static WlsServerConfigMatcher withServerConfig(
+        String serverName, String listenAddress, int port) {
+      return new WlsServerConfigMatcher(serverName, listenAddress, port);
+    }
+
+    @Override
+    protected boolean matchesSafely(
+        List<Map<String, Object>> configs, Description mismatchDescription) {
+      for (Map<String, Object> config : configs) {
+        if (isExpectedConfig(config)) return true;
+      }
+
+      mismatchDescription.appendText(configs.toString());
+      return false;
+    }
+
+    private boolean isExpectedConfig(Map<String, Object> item) {
+      return expectedName.equals(item.get("name"))
+          && expectedAddress.equals(item.get("listenAddress"))
+          && Objects.equals(expectedPort, item.get("listenPort"));
+    }
+
+    @Override
+    public void describeTo(Description description) {
+      description
+          .appendText("name: ")
+          .appendValue(expectedName)
+          .appendText(", listenAddress: ")
+          .appendValue(expectedAddress)
+          .appendText(", listenPort: ")
+          .appendValue(expectedPort);
+    }
+  }
 }

@@ -4,13 +4,14 @@
 
 package oracle.kubernetes.weblogic.domain;
 
+import java.util.Arrays;
+import javax.annotation.Nonnull;
+
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1LocalObjectReference;
 import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1PodSecurityContext;
 import io.kubernetes.client.models.V1SecurityContext;
-import java.util.Arrays;
-import javax.annotation.Nonnull;
 import oracle.kubernetes.weblogic.domain.model.Domain;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 
@@ -24,7 +25,8 @@ public abstract class DomainConfigurator {
 
   private Domain domain;
 
-  public DomainConfigurator() {}
+  public DomainConfigurator() {
+  }
 
   protected DomainConfigurator(Domain domain) {
     this.domain = domain;
@@ -183,6 +185,14 @@ public abstract class DomainConfigurator {
    * @return this object
    */
   public abstract DomainConfigurator withDefaultServerStartPolicy(String startPolicy);
+
+  /**
+   * Sets the server start state ("RUNNING" or "ADMIN") for the domain.
+   *
+   * @param startState the server start state
+   * @return this object
+   */
+  public abstract DomainConfigurator withServerStartState(String startState);
 
   /**
    * Add an environment variable to the domain.

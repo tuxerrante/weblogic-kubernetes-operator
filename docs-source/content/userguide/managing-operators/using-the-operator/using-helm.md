@@ -101,7 +101,7 @@ javaLoggingLevel:  "FINE"
 
 Specifies the Docker image containing the operator code.
 
-Defaults to `weblogic-kubernetes-operator:2.1`.
+Defaults to `weblogic-kubernetes-operator:2.3.0`.
 
 Example:
 ```
@@ -119,7 +119,7 @@ image:  "Always"
 ```
 
 ##### `imagePullSecrets`
-Contains an optional list of Kubernetes secrets, in the operator's namepace, that are needed to access the registry containing the operator Docker image. You are responsible for creating the secret. If no secrets are required, then omit this property.
+Contains an optional list of Kubernetes secrets, in the operator's namespace, that are needed to access the registry containing the operator Docker image. You are responsible for creating the secret. If no secrets are required, then omit this property.
 
 Example:
 ```

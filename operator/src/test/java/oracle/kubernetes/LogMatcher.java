@@ -1,4 +1,4 @@
-// Copyright 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2018, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+
 import org.hamcrest.Description;
 
 public class LogMatcher
@@ -30,6 +31,10 @@ public class LogMatcher
 
   public static LogMatcher containsInfo(String expectedMessage) {
     return new LogMatcher(Level.INFO, expectedMessage);
+  }
+
+  public static LogMatcher containsInfo(String expectedMessage, Object expectedParameter) {
+    return new LogMatcher(Level.INFO, expectedMessage, expectedParameter);
   }
 
   public static LogMatcher containsWarning(String expectedMessage) {

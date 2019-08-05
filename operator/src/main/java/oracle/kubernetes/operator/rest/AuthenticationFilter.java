@@ -1,4 +1,4 @@
-// Copyright 2017, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
@@ -19,6 +19,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.Provider;
+
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.MessageKeys;
@@ -41,13 +42,10 @@ import org.glassfish.jersey.server.ResourceConfig;
 @Priority(FilterPriorities.AUTHENTICATION_FILTER_PRIORITY)
 public class AuthenticationFilter extends BaseDebugLoggingFilter implements ContainerRequestFilter {
 
-  @Context private Application application; // TBD - does this work?
-
   public static final String REST_BACKEND_PROPERTY = "RestBackend";
-
-  private static final String ACCESS_TOKEN_PREFIX = "Bearer ";
-
+  public static final String ACCESS_TOKEN_PREFIX = "Bearer ";
   private static LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+  @Context private Application application; // TBD - does this work?
 
   /** Construct an AuthenticationFilter. */
   public AuthenticationFilter() {
@@ -63,12 +61,9 @@ public class AuthenticationFilter extends BaseDebugLoggingFilter implements Cont
       String t = getAccessToken(req);
       RestBackend be = r.getBackend(t);
       req.setProperty(REST_BACKEND_PROPERTY, be);
-    } catch (RuntimeException re) {
+    } catch (RuntimeException | Error re) {
       authenticationFailure(re);
       throw re; // stop the filter chain if we can't authenticate
-    } catch (Error er) {
-      authenticationFailure(er);
-      throw er; // stop the filter chain if we can't authenticate
     }
     LOGGER.exiting();
   }

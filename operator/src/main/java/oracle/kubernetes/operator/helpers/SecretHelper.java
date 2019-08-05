@@ -1,16 +1,18 @@
-// Copyright 2017, 2018, Oracle Corporation and/or its affiliates.  All rights reserved.
+// Copyright 2017, 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
 // Licensed under the Universal Permissive License v 1.0 as shown at
 // http://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
 
-import io.kubernetes.client.ApiException;
-import io.kubernetes.client.models.V1Secret;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.kubernetes.client.ApiException;
+import io.kubernetes.client.models.V1Secret;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
+import oracle.kubernetes.operator.logging.LoggingFilter;
 import oracle.kubernetes.operator.logging.MessageKeys;
 import oracle.kubernetes.operator.work.ContainerResolver;
 import oracle.kubernetes.operator.work.NextAction;
@@ -20,18 +22,12 @@ import oracle.kubernetes.operator.work.Step;
 /** A Helper Class for retrieving Kubernetes Secrets used by the WebLogic Operator. */
 public class SecretHelper {
   public static final String SECRET_DATA_KEY = "secretData";
-
-  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
-  private final String namespace;
-
-  public enum SecretType {
-    AdminCredentials
-  }
-
   // Admin Server Credentials Type Secret
   // has 2 fields (username and password)
   public static final String ADMIN_SERVER_CREDENTIALS_USERNAME = "username";
   public static final String ADMIN_SERVER_CREDENTIALS_PASSWORD = "password";
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+  private final String namespace;
 
   /**
    * Constructor.
@@ -41,6 +37,20 @@ public class SecretHelper {
   public SecretHelper(String namespace) {
 
     this.namespace = namespace;
+  }
+
+  /**
+   * Factory for {@link Step} that asynchronously acquires secret data.
+   *
+   * @param secretType Secret type
+   * @param secretName Secret name
+   * @param namespace Namespace
+   * @param next Next processing step
+   * @return Step for acquiring secret data
+   */
+  public static Step getSecretData(
+      SecretType secretType, String secretName, String namespace, Step next) {
+    return new SecretDataStep(secretType, secretName, namespace, next);
   }
 
   /**
@@ -54,7 +64,7 @@ public class SecretHelper {
 
     LOGGER.entering();
     CallBuilderFactory factory =
-        ContainerResolver.getInstance().getContainer().getSPI(CallBuilderFactory.class);
+        ContainerResolver.getInstance().getContainer().getSpi(CallBuilderFactory.class);
 
     try {
       if (secretType != SecretType.AdminCredentials) {
@@ -72,7 +82,7 @@ public class SecretHelper {
         return null;
       }
 
-      return harvestAdminSecretData(secret);
+      return harvestAdminSecretData(secret, null);
     } catch (Throwable e) {
       LOGGER.severe(MessageKeys.EXCEPTION, e);
       return null;
@@ -81,18 +91,30 @@ public class SecretHelper {
     }
   }
 
-  /**
-   * Factory for {@link Step} that asynchronously acquires secret data.
-   *
-   * @param secretType Secret type
-   * @param secretName Secret name
-   * @param namespace Namespace
-   * @param next Next processing step
-   * @return Step for acquiring secret data
-   */
-  public static Step getSecretData(
-      SecretType secretType, String secretName, String namespace, Step next) {
-    return new SecretDataStep(secretType, secretName, namespace, next);
+  private static Map<String, byte[]> harvestAdminSecretData(
+      V1Secret secret, LoggingFilter loggingFilter) {
+    Map<String, byte[]> secretData = new HashMap<>();
+    byte[] usernameBytes = secret.getData().get(ADMIN_SERVER_CREDENTIALS_USERNAME);
+    byte[] passwordBytes = secret.getData().get(ADMIN_SERVER_CREDENTIALS_PASSWORD);
+
+    if (usernameBytes != null) {
+      secretData.put(ADMIN_SERVER_CREDENTIALS_USERNAME, usernameBytes);
+    } else {
+      LOGGER.warning(
+          loggingFilter, MessageKeys.SECRET_DATA_NOT_FOUND, ADMIN_SERVER_CREDENTIALS_USERNAME);
+    }
+
+    if (passwordBytes != null) {
+      secretData.put(ADMIN_SERVER_CREDENTIALS_PASSWORD, passwordBytes);
+    } else {
+      LOGGER.warning(
+          loggingFilter, MessageKeys.SECRET_DATA_NOT_FOUND, ADMIN_SERVER_CREDENTIALS_PASSWORD);
+    }
+    return secretData;
+  }
+
+  public enum SecretType {
+    AdminCredentials
   }
 
   private static class SecretDataStep extends Step {
@@ -116,8 +138,9 @@ public class SecretHelper {
       }
 
       LOGGER.fine(MessageKeys.RETRIEVING_SECRET, secretName);
+      final LoggingFilter loggingFilter = packet.getValue(LoggingFilter.LOGGING_FILTER_PACKET_KEY);
       CallBuilderFactory factory =
-          ContainerResolver.getInstance().getContainer().getSPI(CallBuilderFactory.class);
+          ContainerResolver.getInstance().getContainer().getSpi(CallBuilderFactory.class);
       Step read =
           factory
               .create()
@@ -132,7 +155,7 @@ public class SecretHelper {
                         int statusCode,
                         Map<String, List<String>> responseHeaders) {
                       if (statusCode == CallBuilder.NOT_FOUND) {
-                        LOGGER.warning(MessageKeys.SECRET_NOT_FOUND, secretName);
+                        LOGGER.warning(loggingFilter, MessageKeys.SECRET_NOT_FOUND, secretName);
                         return doNext(packet);
                       }
                       return super.onFailure(packet, e, statusCode, responseHeaders);
@@ -144,31 +167,12 @@ public class SecretHelper {
                         V1Secret result,
                         int statusCode,
                         Map<String, List<String>> responseHeaders) {
-                      packet.put(SECRET_DATA_KEY, harvestAdminSecretData(result));
+                      packet.put(SECRET_DATA_KEY, harvestAdminSecretData(result, loggingFilter));
                       return doNext(packet);
                     }
                   });
 
       return doNext(read, packet);
     }
-  }
-
-  private static Map<String, byte[]> harvestAdminSecretData(V1Secret secret) {
-    Map<String, byte[]> secretData = new HashMap<>();
-    byte[] usernameBytes = secret.getData().get(ADMIN_SERVER_CREDENTIALS_USERNAME);
-    byte[] passwordBytes = secret.getData().get(ADMIN_SERVER_CREDENTIALS_PASSWORD);
-
-    if (usernameBytes != null) {
-      secretData.put(ADMIN_SERVER_CREDENTIALS_USERNAME, usernameBytes);
-    } else {
-      LOGGER.warning(MessageKeys.SECRET_DATA_NOT_FOUND, ADMIN_SERVER_CREDENTIALS_USERNAME);
-    }
-
-    if (passwordBytes != null) {
-      secretData.put(ADMIN_SERVER_CREDENTIALS_PASSWORD, passwordBytes);
-    } else {
-      LOGGER.warning(MessageKeys.SECRET_DATA_NOT_FOUND, ADMIN_SERVER_CREDENTIALS_PASSWORD);
-    }
-    return secretData;
   }
 }

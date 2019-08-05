@@ -4,13 +4,11 @@
 
 package oracle.kubernetes.operator.helpers;
 
-import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
-import static java.net.HttpURLConnection.HTTP_CONFLICT;
-import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 
 import com.google.gson.GsonBuilder;
 import com.meterware.pseudoserver.HttpUserAgentTest;
@@ -28,12 +26,6 @@ import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.models.V1PersistentVolumeSpec;
 import io.kubernetes.client.models.V1Status;
 import io.kubernetes.client.models.VersionInfo;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Consumer;
 import oracle.kubernetes.TestUtils;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.calls.RequestParams;
@@ -44,6 +36,12 @@ import oracle.kubernetes.weblogic.domain.model.DomainList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings("SameParameterValue")
 public class CallBuilderTest extends HttpUserAgentTest {
@@ -63,6 +61,10 @@ public class CallBuilderTest extends HttpUserAgentTest {
   private CallBuilder callBuilder = new CallBuilder();
   private Object requestBody;
 
+  private static String toJson(Object object) {
+    return new GsonBuilder().create().toJson(object);
+  }
+
   @Before
   public void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger());
@@ -70,7 +72,7 @@ public class CallBuilderTest extends HttpUserAgentTest {
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     for (Memento memento : mementos) memento.revert();
   }
 
@@ -118,133 +120,6 @@ public class CallBuilderTest extends HttpUserAgentTest {
   }
 
   @Test
-  public void replaceDomainWithRetry_sendsNewDomain() throws ApiException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    defineHttpPutResponse(
-        DOMAIN_RESOURCE, UID, domain, (json) -> requestBody = fromJson(json, Domain.class));
-
-    callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-
-    assertThat(requestBody, equalTo(domain));
-  }
-
-  @Test
-  public void replaceDomainWithRetry_withMaxRetryCountOfZero_sendsNewDomain()
-      throws ApiException, NoSuchFieldException, IllegalAccessException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    defineHttpPutResponse(
-        DOMAIN_RESOURCE, UID, domain, (json) -> requestBody = fromJson(json, Domain.class));
-
-    setMaxRetryCount(callBuilder, 0);
-    callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-
-    assertThat(requestBody, equalTo(domain));
-  }
-
-  @Test
-  public void replaceDomainWithRetry_sendsNewDomain_afterRetry() throws ApiException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    ConflictOncePutServlet conflictOncePutServlet =
-        new ConflictOncePutServlet(domain, (json) -> requestBody = fromJson(json, Domain.class));
-    defineResource(DOMAIN_RESOURCE + "/" + UID, conflictOncePutServlet);
-
-    callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-
-    assertThat(requestBody, equalTo(domain));
-    assertThat(conflictOncePutServlet.conflictReturned, equalTo(true));
-  }
-
-  @Test(expected = ApiException.class)
-  public void replaceDomainWithConflictRetry_conflictResponseCode_throws() throws ApiException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    defineHttpPutResponse(DOMAIN_RESOURCE, UID, domain, new ErrorCodePutServlet(HTTP_CONFLICT));
-
-    callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-  }
-
-  @Test(expected = ApiException.class)
-  public void replaceDomainWithConflictRetry_errorResponseCode_throws() throws ApiException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    defineHttpPutResponse(DOMAIN_RESOURCE, UID, domain, new ErrorCodePutServlet(HTTP_BAD_REQUEST));
-
-    callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-  }
-
-  @Test
-  public void replaceDomainWithConflictRetry_conflictResponseCode_retriedMaxTimes()
-      throws ApiException, NoSuchFieldException, IllegalAccessException {
-    final int MAX_RETRY_COUNT = 5;
-    setMaxRetryCount(callBuilder, MAX_RETRY_COUNT);
-    Domain domain = new Domain().withMetadata(createMetadata());
-    ErrorCodePutServlet conflictPutServlet = new ErrorCodePutServlet(HTTP_CONFLICT);
-    defineHttpPutResponse(DOMAIN_RESOURCE, UID, domain, conflictPutServlet);
-    try {
-      callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-      fail("Expected ApiException not thrown");
-    } catch (ApiException apiException) {
-
-    }
-    assertThat(conflictPutServlet.numGetPutResponseCalled, equalTo(MAX_RETRY_COUNT));
-  }
-
-  @Test
-  public void replaceDomainWithConflictRetry_otherResponseCode_noRetries()
-      throws ApiException, NoSuchFieldException, IllegalAccessException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    ErrorCodePutServlet conflictPutServlet = new ErrorCodePutServlet(HTTP_INTERNAL_ERROR);
-    defineHttpPutResponse(DOMAIN_RESOURCE, UID, domain, conflictPutServlet);
-    try {
-      callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-      fail("Expected ApiException not thrown");
-    } catch (ApiException apiException) {
-
-    }
-    assertThat(conflictPutServlet.numGetPutResponseCalled, equalTo(1));
-  }
-
-  @Test
-  public void replaceDomainWithConflictRetry_withMaxRetryCountOfZero_noRetries()
-      throws ApiException, NoSuchFieldException, IllegalAccessException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    ErrorCodePutServlet conflictPutServlet = new ErrorCodePutServlet(HTTP_CONFLICT);
-    defineHttpPutResponse(DOMAIN_RESOURCE, UID, domain, conflictPutServlet);
-    setMaxRetryCount(callBuilder, 0);
-    try {
-      callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> domain);
-      fail("Expected ApiException not thrown");
-    } catch (ApiException apiException) {
-      assertThat(apiException.getCode(), equalTo(HTTP_CONFLICT));
-    }
-    assertThat(conflictPutServlet.numGetPutResponseCalled, equalTo(1));
-  }
-
-  @Test
-  public void replaceDomainWithConflictRetry_nullUpdatedObject_noRetries()
-      throws ApiException, NoSuchFieldException, IllegalAccessException {
-    Domain domain = new Domain().withMetadata(createMetadata());
-    ErrorCodePutServlet conflictPutServlet = new ErrorCodePutServlet(HTTP_CONFLICT);
-    defineHttpPutResponse(DOMAIN_RESOURCE, UID, domain, conflictPutServlet);
-    try {
-      callBuilder.replaceDomainWithConflictRetry(UID, NAMESPACE, domain, () -> null);
-      fail("Expected ApiException not thrown");
-    } catch (ApiException apiException) {
-      assertThat(apiException.getCode(), equalTo(HTTP_CONFLICT));
-    }
-    assertThat(conflictPutServlet.numGetPutResponseCalled, equalTo(1));
-  }
-
-  Field callBuilderMaxRetryCount;
-
-  private void setMaxRetryCount(CallBuilder callBuilder, int maxRetryCount)
-      throws IllegalAccessException, NoSuchFieldException {
-    if (callBuilderMaxRetryCount == null) {
-      callBuilderMaxRetryCount = CallBuilder.class.getDeclaredField("maxRetryCount");
-      callBuilderMaxRetryCount.setAccessible(true);
-    }
-    callBuilderMaxRetryCount.set(callBuilder, maxRetryCount);
-  }
-
-  @Test
   public void createPV_returnsVolumeAsJson() throws ApiException {
     V1PersistentVolume volume = createPersistentVolume();
     defineHttpPostResponse(PV_RESOURCE, volume);
@@ -277,7 +152,7 @@ public class CallBuilderTest extends HttpUserAgentTest {
   }
 
   @Test
-  public void createPVC_returnsClaimAsJson() throws ApiException {
+  public void createPvc_returnsClaimAsJson() throws ApiException {
     V1PersistentVolumeClaim claim = createPersistentVolumeClaim();
     defineHttpPostResponse(PVC_RESOURCE, claim);
 
@@ -289,7 +164,7 @@ public class CallBuilderTest extends HttpUserAgentTest {
   }
 
   @Test
-  public void createPVC_sendsClaimAsJson() throws ApiException {
+  public void createPvc_sendsClaimAsJson() throws ApiException {
     V1PersistentVolumeClaim claim = createPersistentVolumeClaim();
     defineHttpPostResponse(
         PVC_RESOURCE, claim, (json) -> requestBody = fromJson(json, V1PersistentVolumeClaim.class));
@@ -300,7 +175,7 @@ public class CallBuilderTest extends HttpUserAgentTest {
   }
 
   @Test
-  public void deletePVC_returnsStatus() throws ApiException {
+  public void deletePvc_returnsStatus() throws ApiException {
     defineHttpDeleteResponse(PVC_RESOURCE, NAME, new V1Status());
 
     assertThat(
@@ -312,8 +187,8 @@ public class CallBuilderTest extends HttpUserAgentTest {
     return new V1PersistentVolumeClaimSpec().volumeName("TEST_VOL");
   }
 
-  private Object fromJson(String json, Class<?> aClass) {
-    return new GsonBuilder().create().fromJson(json, aClass);
+  private Object fromJson(String json, Class<?> aaClass) {
+    return new GsonBuilder().create().fromJson(json, aaClass);
   }
 
   private V1ObjectMeta createMetadata() {
@@ -341,6 +216,7 @@ public class CallBuilderTest extends HttpUserAgentTest {
     defineResource(resourceName + "/" + name, new JsonPutServlet(response, bodyValidation));
   }
 
+  @SuppressWarnings("unused")
   private void defineHttpPutResponse(
       String resourceName, String name, Object response, PseudoServlet pseudoServlet) {
     defineResource(resourceName + "/" + name, pseudoServlet);
@@ -350,12 +226,9 @@ public class CallBuilderTest extends HttpUserAgentTest {
     defineResource(resourceName + "/" + name, new JsonDeleteServlet(response));
   }
 
-  private static String toJson(Object object) {
-    return new GsonBuilder().create().toJson(object);
-  }
-
   static class PseudoServletCallDispatcher implements SynchronousCallDispatcher {
     private static String basePath;
+    private SynchronousCallDispatcher underlyingDispatcher;
 
     static Memento install(String basePath) throws NoSuchFieldException {
       PseudoServletCallDispatcher.basePath = basePath;
@@ -364,8 +237,6 @@ public class CallBuilderTest extends HttpUserAgentTest {
       dispatcher.setUnderlyingDispatcher(memento.getOriginalValue());
       return memento;
     }
-
-    private SynchronousCallDispatcher underlyingDispatcher;
 
     void setUnderlyingDispatcher(SynchronousCallDispatcher underlyingDispatcher) {
       this.underlyingDispatcher = underlyingDispatcher;
@@ -392,10 +263,10 @@ public class CallBuilderTest extends HttpUserAgentTest {
 
   static class ErrorCodePutServlet extends PseudoServlet {
 
-    int numGetPutResponseCalled = 0;
     final int errorCode;
+    int numGetPutResponseCalled = 0;
 
-    public ErrorCodePutServlet(int errorCode) {
+    ErrorCodePutServlet(int errorCode) {
       this.errorCode = errorCode;
     }
 
@@ -403,24 +274,6 @@ public class CallBuilderTest extends HttpUserAgentTest {
     public WebResource getPutResponse() {
       numGetPutResponseCalled++;
       return new WebResource("", errorCode);
-    }
-  }
-
-  static class ConflictOncePutServlet extends JsonBodyServlet {
-
-    boolean conflictReturned;
-
-    private ConflictOncePutServlet(Object returnValue, Consumer<String> bodyValidation) {
-      super(returnValue, bodyValidation);
-    }
-
-    @Override
-    public WebResource getPutResponse() throws IOException {
-      if (!conflictReturned) {
-        conflictReturned = true;
-        return new WebResource("", HTTP_CONFLICT);
-      }
-      return getResponse();
     }
   }
 
@@ -448,6 +301,7 @@ public class CallBuilderTest extends HttpUserAgentTest {
       if (!validationErrors.isEmpty()) throw new IOException(String.join("\n", validationErrors));
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     JsonServlet expectingParameter(String name, String value) {
       parameterExpectations.add(new ParameterExpectation(name, value));
       return this;
@@ -515,10 +369,6 @@ public class CallBuilderTest extends HttpUserAgentTest {
   }
 
   static class JsonPutServlet extends JsonBodyServlet {
-
-    private JsonPutServlet(Object returnValue) {
-      this(returnValue, null);
-    }
 
     private JsonPutServlet(Object returnValue, Consumer<String> bodyValidation) {
       super(returnValue, bodyValidation);
