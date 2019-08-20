@@ -153,6 +153,7 @@ public class ItSitConfig extends BaseTest {
         "-Dweblogic.debug.DebugSituationalConfig=true -Dweblogic.debug.DebugSituationalConfigDumpXml=true");
     domain = TestUtils.createDomain(domainMap);
     domain.verifyDomainCreated();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     return domain;
   }
 
@@ -227,6 +228,7 @@ public class ItSitConfig extends BaseTest {
     String testMethod = new Object() {}.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethod);
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -256,6 +258,7 @@ public class ItSitConfig extends BaseTest {
     String testMethod = new Object() {}.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethod);
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -290,6 +293,7 @@ public class ItSitConfig extends BaseTest {
     String testMethod = new Object() {}.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethod);
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -322,6 +326,7 @@ public class ItSitConfig extends BaseTest {
     String testMethod = new Object() {}.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethod);
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -354,6 +359,7 @@ public class ItSitConfig extends BaseTest {
     String testMethod = new Object() {}.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethod);
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -389,6 +395,7 @@ public class ItSitConfig extends BaseTest {
         StandardCopyOption.REPLACE_EXISTING);
     recreateConfigMapandRestart("test-secrets", "test-secrets");
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -425,6 +432,7 @@ public class ItSitConfig extends BaseTest {
         StandardCopyOption.REPLACE_EXISTING);
     recreateConfigMapandRestart("test-secrets", "test-secrets");
     transferTests();
+    TestUtils.exec("kubectl get all --all-namespaces", true);
     ExecResult result =
         TestUtils.exec(
             KUBE_EXEC_CMD
@@ -457,6 +465,7 @@ public class ItSitConfig extends BaseTest {
       copySitConfigFiles(files, newSecret);
       recreateConfigMapandRestart("test-secrets", newSecret);
       transferTests();
+      TestUtils.exec("kubectl get all --all-namespaces", true);
       ExecResult result =
           TestUtils.exec(
               KUBE_EXEC_CMD
