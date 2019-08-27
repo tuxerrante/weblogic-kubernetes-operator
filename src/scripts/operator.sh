@@ -70,4 +70,13 @@ HEAP="-XX:+UnlockExperimentalVMOptions -XX:MaxRAMFraction=1 -XshowSettings:vm"
 # Start operator
 java $HEAP $MOCKING_WLS $DEBUG $LOGGING -jar /operator/weblogic-kubernetes-operator.jar &
 PID=$!
-wait $PID
+while true; do
+  if [ -e /operator/.shutdown ] ; then
+    if [ -e /operator/.generateHeap ] ; then
+      mkdir -m 777 -p /diagnostic
+      jmap -dump:live,format=b,file=/diagnostic/$HOSTNAME.hprof $PID
+    fi
+    exit 0
+  fi
+  sleep 3
+done
