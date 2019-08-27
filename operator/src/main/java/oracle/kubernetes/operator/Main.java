@@ -380,6 +380,7 @@ public class Main {
     }
 
     isNamespaceStopping.forEach((key, value) -> value.set(true));
+    OperatorLiveness.causeShutdown();
   }
 
   private static EventWatcher createEventWatcher(String ns, String initialResourceVersion) {
