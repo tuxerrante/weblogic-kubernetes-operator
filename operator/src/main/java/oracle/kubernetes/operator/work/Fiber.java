@@ -20,6 +20,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+import oracle.kubernetes.operator.OperatorLiveness;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.MessageKeys;
@@ -733,6 +734,10 @@ public final class Fiber implements Runnable, Future<Void>, ComponentRegistry {
       boolean isWillCall = count.get() > 1; // more calls outstanding then our initial buffer count
       if (isWillCall) {
         if (this.exitCallback != null || this.exitCallback == PLACEHOLDER) {
+
+          // Trigger operator shutdown and restart with heap dump
+          OperatorLiveness.causeShutdown(true);
+
           throw new IllegalStateException();
         }
         this.exitCallback = myCallback;
