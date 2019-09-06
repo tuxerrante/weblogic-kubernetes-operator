@@ -62,9 +62,9 @@ public class LoadBalancer {
 
   public void createTraefikLoadBalancer() throws Exception {
     String cmdLb =
-        "helm install --name traefik-operator --namespace traefik --values "
+        proxyString() + "helm fetch stable/traefik && " + proxyString() + " helm repo update && helm repo list &&  helm install --name traefik-operator --namespace traefik --values "
             + BaseTest.getProjectRoot()
-            + "/integration-tests/src/test/resources/charts/traefik/values.yaml stable/traefik";
+            + "/integration-tests/src/test/resources/charts/traefik/values.yaml traefik-1.77.1.tgz";
     logger.info("Executing cmd " + cmdLb);
 
     ExecResult result = ExecCommand.exec(cmdLb);
@@ -123,7 +123,7 @@ public class LoadBalancer {
         .append("}")
         .append("\"")
         .append(" traefik-operator")
-        .append(" stable/traefik ");
+        .append(" traefik-1.77.1.tgz ");
 
     logger.info(" upgradeTraefikNamespace() Running " + cmd.toString());
     ExecResult result = ExecCommand.exec(cmd.toString());
@@ -164,9 +164,14 @@ public class LoadBalancer {
     logger.info("Command returned " + outputStr);
   }
 
+  private static String proxyString() {
+    String theString = System.getenv("PROXY_STRING");
+    return (theString == null || theString.isEmpty()) ? "" : " ".concat(theString).concat(" ");
+  }
+
   public void createVoyagerLoadBalancer() throws Exception {
 
-    String cmd1 = "helm repo add appscode https://charts.appscode.com/stable/";
+    String cmd1 = proxyString() + "helm repo add appscode https://charts.appscode.com/stable/";
     logger.info("Executing Add Appscode Chart Repository cmd " + cmd1);
 
     executeHelmCommand(cmd1);
@@ -177,7 +182,7 @@ public class LoadBalancer {
     executeHelmCommand(cmd2);
 
     String cmd3 =
-        "helm install appscode/voyager --name voyager-operator --version 7.4.0 --namespace voyage "
+        proxyString() + "helm fetch appscode/voyager && " + proxyString() + "helm repo update && helm install voyager-10.0.0.tgz --name voyager-operator --version 7.4.0 --namespace voyage "
             + "--set cloudProvider=baremetal --set apiserver.enableValidatingWebhook=false";
     logger.info("Executing Install voyager operator cmd " + cmd3);
 

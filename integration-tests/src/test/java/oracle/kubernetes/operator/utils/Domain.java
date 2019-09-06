@@ -1705,12 +1705,18 @@ public class Domain {
       }
       // git clone docker-images project
       removeAndClone
-          .append(" git clone https://github.com/oracle/docker-images.git ")
+          .append(proxyString())
+          .append("git clone https://github.com/oracle/docker-images.git ")
           .append(BaseTest.getResultDir())
           .append("/docker-images");
       logger.info("Executing cmd " + removeAndClone);
       TestUtils.exec(removeAndClone.toString());
     }
+  }
+
+  private static String proxyString() {
+    String theString = System.getenv("PROXY_STRING");
+    return (theString == null || theString.isEmpty()) ? "" : " ".concat(theString).concat(" ");
   }
 
   /**

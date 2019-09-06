@@ -176,7 +176,7 @@ if [ "$SHARED_CLUSTER" = "true" ]; then
 	
   fi
   setup_shared_cluster
-  docker images
+  #docker images
     
 elif [ "$JENKINS" = "true" ]; then
 
@@ -191,10 +191,13 @@ elif [ "$JENKINS" = "true" ]; then
 
   export JAR_VERSION="`grep -m1 "<version>" pom.xml | cut -f2 -d">" | cut -f1 -d "<"`"
   # create a docker image for the operator code being tested
-  docker build --build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy --build-arg no_proxy=$no_proxy -t "${IMAGE_NAME_OPERATOR}:${IMAGE_TAG_OPERATOR}"  --build-arg VERSION=$JAR_VERSION --no-cache=true .
-  docker tag "${IMAGE_NAME_OPERATOR}:${IMAGE_TAG_OPERATOR}" weblogic-kubernetes-operator:latest
+  #docker build --build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy --build-arg no_proxy=$no_proxy -t "${IMAGE_NAME_OPERATOR}:${IMAGE_TAG_OPERATOR}"  --build-arg VERSION=$JAR_VERSION --no-cache=true .
+  #docker tag "${IMAGE_NAME_OPERATOR}:${IMAGE_TAG_OPERATOR}" weblogic-kubernetes-operator:latest
+  crictl pull --creds ${CRICTL_CREDS} phx.ocir.io/weblogick8s/weblogic-kuberentes-operator:develop
+  skopeo copy containers-storage:phx.ocir.io/weblogick8s/weblogic-kubernetes-operator:develop containers-storage:weblogic-kubernetes-operator:latest
+  skopeo copy containers-storage:phx.ocir.io/weblogick8s/weblogic-kubernetes-operator:develop containers-storage:weblogic-kubernetes-operator:test_master
   
-  docker images
+  crictl images --verbose | grep weblogic
 
 else
   if [ "$JRF_ENABLED" = true ] ; then
