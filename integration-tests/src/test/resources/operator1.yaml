@@ -7,4 +7,4 @@ serviceAccount: weblogic-operator
 namespace: weblogic-operator1
 domainNamespaces: [ "default", "test1" ]
 externalRestEnabled: true
-javaLoggingLevel: FINE
+javaLoggingLevel: FINER
