@@ -10,6 +10,8 @@ import java.util.function.Consumer;
 import io.kubernetes.client.models.V1ObjectMeta;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.NextAction;
@@ -22,6 +24,7 @@ import oracle.kubernetes.operator.work.Step;
  * @param <T> the type of resource handled by this step
  */
 abstract class WaitForReadyStep<T> extends Step {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private T initialResource;
 
   /**
@@ -122,6 +125,9 @@ abstract class WaitForReadyStep<T> extends Step {
 
   @Override
   public final NextAction apply(Packet packet) {
+    LOGGER.fine("checking at initialResource = " + initialResource
+        + ": shouldTerminate=" +  shouldTerminateFiber(initialResource)
+        + ": isReady=" + isReady(initialResource));
     if (shouldTerminateFiber(initialResource))
       return doTerminate(createTerminationException(initialResource), packet);
     else if (isReady(initialResource)) {
