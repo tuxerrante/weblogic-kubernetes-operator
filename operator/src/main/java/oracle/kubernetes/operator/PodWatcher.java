@@ -193,6 +193,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     // A pod is ready if it is not being deleted and has the ready status.
     @Override
     protected boolean isReady(V1Pod result) {
+      LOGGER.fine("REG-> pod status " + Optional.ofNullable(result).map(V1Pod::getStatus).orElse(null));
       return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
     }
 
@@ -226,6 +227,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     // A pod is considered deleted when reading its value from Kubernetes returns null.
     @Override
     protected boolean isReady(V1Pod result) {
+      LOGGER.fine("REG-> pod status " + Optional.ofNullable(result).map(V1Pod::getStatus).orElse(null));
       return result == null;
     }
 

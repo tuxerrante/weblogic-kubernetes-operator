@@ -232,6 +232,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job> {
     // A job is considered ready once it has either successfully completed, or been marked as failed.
     @Override
     boolean isReady(V1Job job) {
+      LOGGER.fine("REG-> job status " + job.getStatus());
       return isComplete(job) || isFailed(job);
     }
 
@@ -281,6 +282,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job> {
     // be available for reading
     @Override
     boolean shouldTerminateFiber(V1Job job) {
+      LOGGER.fine("REG-> job status " + Optional.ofNullable(job).map(V1Job::getStatus).orElse(null));
       return isFailed(job) && "DeadlineExceeded".equals(getFailedReason(job));
     }
 
