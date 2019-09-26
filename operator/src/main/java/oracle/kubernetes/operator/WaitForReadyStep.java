@@ -125,7 +125,7 @@ abstract class WaitForReadyStep<T> extends Step {
 
   @Override
   public final NextAction apply(Packet packet) {
-    LOGGER.fine("checking at initialResource = " + initialResource
+    LOGGER.fine("REG-> in " + getClass().getName() + ", checking initialResource: "
         + ": shouldTerminate=" +  shouldTerminateFiber(initialResource)
         + ": isReady=" + isReady(initialResource));
     if (shouldTerminateFiber(initialResource))
