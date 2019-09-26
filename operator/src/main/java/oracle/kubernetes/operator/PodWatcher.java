@@ -137,7 +137,8 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
         break;
       case "DELETED":
         Collection<Consumer<V1Pod>> onDeleteCallbacks = getOnDeleteCallbacks(podName);
-        LOGGER.fine("REG-> Received delete callback for " + podName + " with " + onDeleteCallbacks.size() + " registrations");
+        LOGGER.fine("REG-> Received delete callback for " + podName
+                     + " with " + onDeleteCallbacks.size() + " registrations");
         onDeleteCallbacks.forEach(c -> c.accept(pod));
         break;
       case "ERROR":

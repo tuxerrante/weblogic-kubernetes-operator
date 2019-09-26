@@ -189,8 +189,6 @@ abstract class WaitForReadyStep<T> extends Step {
 
     @Override
     public void accept(T resource) {
-      LOGGER.fine("REG-> received callback with shouldProceed = " + shouldProcessCallback(resource)
-          + " and mayResume = " + mayResumeFiber());
       if (shouldProcessCallback(resource)) {
         proceedFromWait(resource);
       }
