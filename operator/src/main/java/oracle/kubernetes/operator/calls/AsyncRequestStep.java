@@ -28,6 +28,8 @@ import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
+import static oracle.kubernetes.operator.logging.MessageKeys.ASYNC_SUCCESS;
+
 /**
  * A Step driven by an asynchronous call to the Kubernetes API, which results in a series of
  * callbacks until canceled.
@@ -192,7 +194,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
                 public void onSuccess(
                     T result, int statusCode, Map<String, List<String>> responseHeaders) {
                   if (didResume.compareAndSet(false, true)) {
-                    LOGGER.fine(MessageKeys.ASYNC_SUCCESS, identityHash(), result, statusCode, responseHeaders);
+                    LOGGER.fine(ASYNC_SUCCESS, requestParams.call, identityHash(), result, statusCode, responseHeaders);
 
                     helper.recycle(client);
                     packet
@@ -265,8 +267,8 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
         });
   }
 
-  private int identityHash() {
-    return System.identityHashCode(this);
+  private String identityHash() {
+    return Integer.toHexString(System.identityHashCode(this));
   }
 
   private abstract static class BaseApiCallback<T> implements ApiCallback<T> {

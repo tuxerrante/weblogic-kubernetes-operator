@@ -94,6 +94,7 @@ abstract class Watcher<T> {
    * @param listener the instance which should receive watch events
    */
   void setListener(WatchListener<T> listener) {
+    LOGGER.fine("Changing listener from " + this.listener + listener);
     this.listener = listener;
   }
 
@@ -195,6 +196,7 @@ abstract class Watcher<T> {
     LOGGER.fine(MessageKeys.WATCH_EVENT, item.type, item.object);
     trackResourceVersion(item.type, item.object);
     if (listener != null) {
+      LOGGER.fine("REG-> Sending update to " + listener);
       listener.receivedResponse(item);
     }
   }
