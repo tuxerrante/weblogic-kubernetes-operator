@@ -133,7 +133,10 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     switch (item.type) {
       case "ADDED":
       case "MODIFIED":
-        getOnModifiedCallbacks(podName).forEach(c -> c.accept(pod));
+        Collection<Consumer<V1Pod>> onModifiedCallbacks = getOnModifiedCallbacks(podName);
+        LOGGER.fine("REG-> Received " + item.type + " callback for " + podName
+                     + " with " + onModifiedCallbacks.size() + " registrations");
+        onModifiedCallbacks.forEach(c -> c.accept(pod));
         break;
       case "DELETED":
         Collection<Consumer<V1Pod>> onDeleteCallbacks = getOnDeleteCallbacks(podName);

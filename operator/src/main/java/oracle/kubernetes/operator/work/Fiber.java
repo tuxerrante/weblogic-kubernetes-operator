@@ -571,7 +571,7 @@ public final class Fiber implements Runnable, Future<Void>, ComponentRegistry {
         return false;
       }
 
-      LOGGER.fine("REG-> invoke step " + na.next);
+      LOGGER.fine("invoke step " + na.next);
 
       if (LOGGER.isFinerEnabled()) {
         LOGGER.finer(
