@@ -191,15 +191,24 @@ public class PodWatcherTest extends WatcherTestBase implements WatchListener<V1P
     assertThat(terminalStep.wasRun(), is(false));
   }
 
+  @Test
+  public void whenPodNotReadyLaterAndThenReady_runNextStep() {
+    sendPodModifiedWatchAfterWaitForReady(this::dontChangePod, this::markPodReady);
+
+    assertThat(terminalStep.wasRun(), is(true));
+  }
+
   // Starts the waitForReady step with an incomplete pod and sends a watch indicating that the pod has changed
-  private void sendPodModifiedWatchAfterWaitForReady(Function<V1Pod,V1Pod> modifier) {
+  @SafeVarargs
+  private void sendPodModifiedWatchAfterWaitForReady(Function<V1Pod,V1Pod>... modifiers) {
     AtomicBoolean stopping = new AtomicBoolean(false);
     PodWatcher watcher = createWatcher(stopping);
     testSupport.defineResources(createPod());
 
     try {
       testSupport.runSteps(watcher.waitForReady(createPod(), terminalStep));
-      watcher.receivedResponse(new Watch.Response<>("MODIFIED", modifier.apply(createPod())));
+      for (Function<V1Pod,V1Pod> modifier : modifiers)
+        watcher.receivedResponse(new Watch.Response<>("MODIFIED", modifier.apply(createPod())));
     } finally {
       stopping.set(true);
     }

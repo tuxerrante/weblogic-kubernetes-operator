@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
@@ -89,7 +90,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
 
   private @Nonnull Collection<Consumer<V1Pod>> getOnModifiedCallbacks(String podName) {
     synchronized (modifiedCallbackRegistrations) {
-      return Optional.ofNullable(modifiedCallbackRegistrations.remove(podName)).orElse(Collections.emptyList());
+      return Optional.ofNullable(modifiedCallbackRegistrations.get(podName)).orElse(Collections.emptyList());
     }
   }
 
@@ -134,7 +135,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     switch (item.type) {
       case "ADDED":
       case "MODIFIED":
-        Collection<Consumer<V1Pod>> onModifiedCallbacks = getOnModifiedCallbacks(podName);
+        List<Consumer<V1Pod>> onModifiedCallbacks = new ArrayList<>(getOnModifiedCallbacks(podName));
         LOGGER.fine("REG-> Received " + item.type + " callback for " + podName
                      + " with " + onModifiedCallbacks.size() + " registrations");
         onModifiedCallbacks.forEach(c -> c.accept(pod));
