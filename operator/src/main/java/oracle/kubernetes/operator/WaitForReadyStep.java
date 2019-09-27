@@ -189,18 +189,19 @@ abstract class WaitForReadyStep<T> extends Step {
 
     @Override
     public void accept(T resource) {
-      LOGGER.fine("REG-> shouldProcess = " + shouldProcessCallback(resource));
-      if (shouldProcessCallback(resource)) {
+      boolean shouldProcessCallback = shouldProcessCallback(resource);
+      LOGGER.fine("REG-> shouldProcess = " + shouldProcessCallback);
+      if (shouldProcessCallback) {
         proceedFromWait(resource);
       }
     }
 
     // The resource has now either completed or failed, so we can continue processing.
     private void proceedFromWait(T resource) {
-      LOGGER.fine("REG-> " + resource.getClass().getName() + " with mayResume=" + mayResumeFiber());
+      LOGGER.fine("REG-> " + getClass().getName() + " about to remove callback");
       removeCallback(getName(), this);
-
       if (mayResumeFiber()) {
+        LOGGER.fine("REG-> resuming");
         handleResourceReady(fiber, packet, resource);
         fiber.resume(packet);
       }
