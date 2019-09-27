@@ -194,7 +194,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
                 public void onSuccess(
                     T result, int statusCode, Map<String, List<String>> responseHeaders) {
                   if (didResume.compareAndSet(false, true)) {
-                    LOGGER.fine(ASYNC_SUCCESS, requestParams.call, identityHash(), result, statusCode, responseHeaders);
+                    LOGGER.fine(ASYNC_SUCCESS, identityHash(), requestParams.call, result, statusCode, responseHeaders);
 
                     helper.recycle(client);
                     packet

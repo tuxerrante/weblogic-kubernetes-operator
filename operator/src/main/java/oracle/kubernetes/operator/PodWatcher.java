@@ -83,6 +83,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
   private void addOnModifiedCallback(String podName, Consumer<V1Pod> callback) {
     synchronized (modifiedCallbackRegistrations) {
       modifiedCallbackRegistrations.computeIfAbsent(podName, k -> new ArrayList<>()).add(callback);
+      LOGGER.fine("REG-> added registration " + callback + ", total is now " + modifiedCallbackRegistrations.size());
     }
   }
 
