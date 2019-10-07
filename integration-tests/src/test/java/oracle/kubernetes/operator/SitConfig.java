@@ -1,5 +1,6 @@
 // Copyright (c) 2019, Oracle Corporation and/or its affiliates.  All rights reserved.
-// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+// Licensed under the Universal Permissive License v 1.0 as shown at
+// https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
 
@@ -15,7 +16,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Level;
-
 import oracle.kubernetes.operator.utils.Domain;
 import oracle.kubernetes.operator.utils.ExecResult;
 import oracle.kubernetes.operator.utils.LoggerHelper;
@@ -23,9 +23,7 @@ import oracle.kubernetes.operator.utils.Operator;
 import oracle.kubernetes.operator.utils.TestUtils;
 import org.junit.Assert;
 
-/**
- * JUnit test class used for testing configuration override use cases.
- */
+/** JUnit test class used for testing configuration override use cases. */
 public class SitConfig extends BaseTest {
 
   private static final String DOMAINUID = "customsitconfigdomain";
@@ -58,17 +56,18 @@ public class SitConfig extends BaseTest {
    * the resultRoot, pvRoot and projectRoot attributes.
    *
    * @throws Exception when the initialization, creating directories , copying files and domain
-   *                   creation fails.
+   *     creation fails.
    */
-  protected static void staticPrepare(boolean domainInImage, String domainScript, String testClassName)
-      throws Exception {
+  protected static void staticPrepare(
+      boolean domainInImage, String domainScript, String testClassName) throws Exception {
     // initialize test properties and create the directories
     if (FULLTEST) {
       // initialize test properties and create the directories
       initialize(APP_PROPS_FILE, testClassName);
       // create operator1
       if (operator1 == null) {
-        Map<String, Object> operatorMap = TestUtils.createOperatorMap(getNewSuffixCount(), true, testClassName);
+        Map<String, Object> operatorMap =
+            TestUtils.createOperatorMap(getNewSuffixCount(), true, testClassName);
         operator1 = TestUtils.createOperator(operatorMap, Operator.RestCertType.SELF_SIGNED);
         Assert.assertNotNull(operator1);
         domainNS = ((ArrayList<String>) operatorMap.get("domainNamespaces")).get(0);
@@ -95,11 +94,11 @@ public class SitConfig extends BaseTest {
       JDBC_URL = "jdbc:mysql://" + fqdn + ":" + MYSQL_DB_PORT + "/";
       // copy the configuration override files to replacing the JDBC_URL token
       String[] files = {
-          "config.xml",
-          "jdbc-JdbcTestDataSource-0.xml",
-          "diagnostics-WLDF-MODULE-0.xml",
-          "jms-ClusterJmsSystemResource.xml",
-          "version.txt"
+        "config.xml",
+        "jdbc-JdbcTestDataSource-0.xml",
+        "diagnostics-WLDF-MODULE-0.xml",
+        "jms-ClusterJmsSystemResource.xml",
+        "version.txt"
       };
       copySitConfigFiles(files, oldSecret);
       // create weblogic domain with configOverrides
@@ -142,8 +141,7 @@ public class SitConfig extends BaseTest {
         operator1.destroy();
         operator1 = null;
       }
-      tearDown(new Object() {
-      }.getClass().getEnclosingClass().getSimpleName());
+      tearDown(new Object() {}.getClass().getEnclosingClass().getSimpleName());
     }
   }
 
@@ -160,7 +158,8 @@ public class SitConfig extends BaseTest {
     // load input yaml to map and add configOverrides
     Map<String, Object> domainMap = null;
     if (domainInImage) {
-      domainMap = TestUtils.createDomainInImageMap(getNewSuffixCount(), false, "sitconfigdomaininimage");
+      domainMap =
+          TestUtils.createDomainInImageMap(getNewSuffixCount(), false, "sitconfigdomaininimage");
     } else {
       domainMap = TestUtils.createDomainMap(getNewSuffixCount(), "sitconfigdomaininpv");
     }
@@ -521,7 +520,14 @@ public class SitConfig extends BaseTest {
           StandardOpenOption.TRUNCATE_EXISTING);
 
       // delete the old secret and add new secret to domain.yaml
-      TestUtils.exec("kubectl delete secret " + domain.getDomainUid() + "-" + oldSecret, true);
+      TestUtils.exec(
+          "kubectl delete secret -n "
+              + domain.getDomainNs()
+              + " "
+              + domain.getDomainUid()
+              + "-"
+              + oldSecret,
+          true);
       String cmd =
           "kubectl -n "
               + domain.getDomainNs()
