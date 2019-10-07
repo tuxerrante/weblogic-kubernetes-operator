@@ -29,7 +29,7 @@ public class SitConfig extends BaseTest {
   private static final String DOMAINUID = "customsitconfigdomain";
   private static final String ADMINPORT = "30710";
   private static final int T3CHANNELPORT = 30091;
-  private static final String MYSQL_DB_PORT = "31306";
+  private static String MYSQL_DB_PORT;
   private static String TEST_RES_DIR;
   private static String ADMINPODNAME;
   private static String fqdn;
@@ -59,7 +59,7 @@ public class SitConfig extends BaseTest {
    *     creation fails.
    */
   protected static void staticPrepare(
-      boolean domainInImage, String domainScript, String testClassName) throws Exception {
+      boolean domainInImage, String domainScript, String testClassName, String mysqlPort) throws Exception {
     // initialize test properties and create the directories
     if (FULLTEST) {
       // initialize test properties and create the directories
@@ -80,7 +80,8 @@ public class SitConfig extends BaseTest {
       Files.createDirectories(Paths.get(sitconfigTmpDir));
       Files.createDirectories(Paths.get(configOverrideDir));
       Files.createDirectories(Paths.get(mysqltmpDir));
-      // Create the MySql db container
+      // Create the MySql db container      
+      MYSQL_DB_PORT = mysqlPort;
       copyMySqlFile();
       ExecResult result = TestUtils.exec("kubectl create -f " + mysqlYamlFile);
       Assert.assertEquals(0, result.exitValue());
@@ -235,12 +236,13 @@ public class SitConfig extends BaseTest {
    */
   private static void copyMySqlFile() throws IOException {
     final Path src = Paths.get(TEST_RES_DIR + "/mysql/mysql-dbservices.ymlt");
-    final Path dst = Paths.get(mysqlYamlFile);
+    final Path dst = Paths.get(mysqlYamlFile);    
     LoggerHelper.getLocal().log(Level.INFO, "Copying {0}", src.toString());
     Charset charset = StandardCharsets.UTF_8;
     String content = new String(Files.readAllBytes(src), charset);
     content = content.replaceAll("@NAMESPACE@", "default");
     content = content.replaceAll("@DOMAIN_UID@", DOMAINUID);
+    content = content.replaceAll("31306", MYSQL_DB_PORT);
     LoggerHelper.getLocal().log(Level.INFO, "to {0}", dst.toString());
     Files.write(dst, content.getBytes(charset));
   }

@@ -32,11 +32,11 @@ public class ItSitConfigDomainInImage extends SitConfig {
   public static void staticPrepare() throws Exception {
     testClassName = new Object() {
     }.getClass().getEnclosingClass().getSimpleName();
-    if (FULLTEST) {
+    if (FULLTEST) {      
       staticPrepare(
           true,
           "integration-tests/src/test/resources/sitconfig/scripts/"
-              + "create-domain-auto-custom-sit-config-inimage.py", testClassName);
+              + "create-domain-auto-custom-sit-config-inimage.py", testClassName, "31306");
     }
   }
 

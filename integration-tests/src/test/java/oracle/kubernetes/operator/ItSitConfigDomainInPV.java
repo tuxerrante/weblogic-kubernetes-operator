@@ -33,7 +33,7 @@ public class ItSitConfigDomainInPV extends SitConfig {
       staticPrepare(
           false,
           "integration-tests/src/test/resources/sitconfig/"
-              + "scripts/create-domain-auto-custom-sit-config20.py", testClassName);
+              + "scripts/create-domain-auto-custom-sit-config20.py", testClassName, "32306");
     }
   }
 
