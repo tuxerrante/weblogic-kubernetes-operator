@@ -553,7 +553,9 @@ public class SitConfig extends BaseTest {
     domain.verifyServerPodsDeleted(clusterReplicas);
 
     String cmd =
-        "kubectl create configmap "
+        "kubectl create configmap -n "
+            + domain.getDomainNs()
+            + " "
             + DOMAINUID
             + "-sitconfigcm --from-file="
             + configOverrideDir
