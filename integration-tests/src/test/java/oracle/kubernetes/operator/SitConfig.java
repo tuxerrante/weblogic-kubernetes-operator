@@ -72,7 +72,7 @@ public class SitConfig extends BaseTest {
         Assert.assertNotNull(operator1);
         domainNS = ((ArrayList<String>) operatorMap.get("domainNamespaces")).get(0);
       }
-      
+      TEST_RES_DIR = BaseTest.getProjectRoot() + "/integration-tests/src/test/resources/";
       sitconfigTmpDir = BaseTest.getResultDir() + "/sitconfigtemp/" + testClassName;      
       configOverrideDir = sitconfigTmpDir + "/configoverridefiles"; 
       Files.createDirectories(Paths.get(configOverrideDir));
@@ -104,7 +104,7 @@ public class SitConfig extends BaseTest {
       
       // copy the jmx test client file the administratioin server weblogic server pod
       ADMINPODNAME = domain.getDomainUid() + "-" + domain.getAdminServerName();
-      TEST_RES_DIR = BaseTest.getProjectRoot() + "/integration-tests/src/test/resources/";
+      
       TestUtils.copyFileViaCat(
           TEST_RES_DIR + "sitconfig/java/SitConfigTests.java",
           "SitConfigTests.java",
