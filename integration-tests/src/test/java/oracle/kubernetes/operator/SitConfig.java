@@ -497,6 +497,7 @@ public class SitConfig extends BaseTest {
     if (getWeblogicImageTag().contains(PS3_TAG)) {
       content = content.replaceAll(JDBC_DRIVER_NEW, JDBC_DRIVER_OLD);
     }
+    logger.log(Level.INFO, content);
     Files.write(
         Paths.get(sitconfigTmpDir, "create-jdbc-resource.py"),
         content.getBytes(StandardCharsets.UTF_8));
