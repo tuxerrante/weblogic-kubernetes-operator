@@ -72,18 +72,18 @@ public class SitConfig extends BaseTest {
         Assert.assertNotNull(operator1);
         domainNS = ((ArrayList<String>) operatorMap.get("domainNamespaces")).get(0);
       }
-      TEST_RES_DIR = BaseTest.getProjectRoot() + "/integration-tests/src/test/resources/";
-      sitconfigTmpDir = BaseTest.getResultDir() + "/sitconfigtemp";      
-      configOverrideDir = sitconfigTmpDir + "/configoverridefiles";      
-      Files.createDirectories(Paths.get(sitconfigTmpDir));
+      
+      sitconfigTmpDir = BaseTest.getResultDir() + "/sitconfigtemp/" + testClassName;      
+      configOverrideDir = sitconfigTmpDir + "/configoverridefiles"; 
       Files.createDirectories(Paths.get(configOverrideDir));
-      MYSQL_DB_PORT = mysqlPort;
+      
 
       if (!OPENSHIFT) {
         fqdn = TestUtils.getHostName();
       } else {
         fqdn = TestUtils.exec("hostname -i").stdout().trim();
       }
+      MYSQL_DB_PORT = mysqlPort;
       JDBC_URL = "jdbc:mysql://" + fqdn + ":" + MYSQL_DB_PORT + "/";
       // copy the configuration override files to replacing the JDBC_URL token
       String[] files = {
@@ -95,18 +95,16 @@ public class SitConfig extends BaseTest {
       };
       copySitConfigFiles(files, oldSecret);
       // create weblogic domain with configOverrides
-      domain = createSitConfigDomain(domainInImage, domainScript);
-      Assert.assertNotNull(domain);
-      
-      // Create the MySql db container  
-      createMySQLContainer();      
+      domain = createSitConfigDomain(domainInImage, domainScript);      
       domainYaml =
           BaseTest.getUserProjectsDir()
               + "/weblogic-domains/"
               + domain.getDomainUid()
-              + "/domain.yaml";
+              + "/domain.yaml";      
+      
       // copy the jmx test client file the administratioin server weblogic server pod
       ADMINPODNAME = domain.getDomainUid() + "-" + domain.getAdminServerName();
+      TEST_RES_DIR = BaseTest.getProjectRoot() + "/integration-tests/src/test/resources/";
       TestUtils.copyFileViaCat(
           TEST_RES_DIR + "sitconfig/java/SitConfigTests.java",
           "SitConfigTests.java",
@@ -117,9 +115,13 @@ public class SitConfig extends BaseTest {
           "runSitConfigTests.sh",
           ADMINPODNAME,
           domain.getDomainNs());
+      
       KUBE_EXEC_CMD =
           "kubectl -n " + domain.getDomainNs() + "  exec -it " + ADMINPODNAME + "  -- bash -c";
       JDBC_RES_SCRIPT = TEST_RES_DIR + "/sitconfig/scripts/create-jdbc-resource.py";
+      
+      // Create the MySql db container  
+      createMySQLContainer();
     }
   }
 
@@ -130,7 +132,7 @@ public class SitConfig extends BaseTest {
    */
   protected static void staticUnprepare() throws Exception {
     if (FULLTEST) {
-      ExecResult result = TestUtils.exec("kubectl delete -f " + mysqlYamlFile);
+      TestUtils.exec("kubectl delete -f " + mysqlYamlFile, true);
       destroySitConfigDomain();
       if (operator1 != null) {
         LoggerHelper.getLocal().log(Level.INFO, "Destroying operator...");
@@ -171,6 +173,7 @@ public class SitConfig extends BaseTest {
         "-Dweblogic.debug.DebugSituationalConfig=true -Dweblogic.debug.DebugSituationalConfigDumpXml=true");
     domain = TestUtils.createDomain(domainMap);
     domain.verifyDomainCreated();
+    Assert.assertNotNull(domain);
     return domain;
   }
 
