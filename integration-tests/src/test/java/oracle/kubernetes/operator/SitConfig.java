@@ -80,17 +80,13 @@ public class SitConfig extends BaseTest {
       Files.createDirectories(Paths.get(sitconfigTmpDir));
       Files.createDirectories(Paths.get(configOverrideDir));
       Files.createDirectories(Paths.get(mysqltmpDir));
-      // Create the MySql db container      
+          
       MYSQL_DB_PORT = mysqlPort;
-      copyMySqlFile();
-      ExecResult result = TestUtils.exec("kubectl create -f " + mysqlYamlFile);
-      Assert.assertEquals(0, result.exitValue());
 
       if (!OPENSHIFT) {
         fqdn = TestUtils.getHostName();
       } else {
-        result = TestUtils.exec("hostname -i");
-        fqdn = result.stdout().trim();
+        fqdn = TestUtils.exec("hostname -i").stdout().trim();
       }
       JDBC_URL = "jdbc:mysql://" + fqdn + ":" + MYSQL_DB_PORT + "/";
       // copy the configuration override files to replacing the JDBC_URL token
@@ -105,6 +101,11 @@ public class SitConfig extends BaseTest {
       // create weblogic domain with configOverrides
       domain = createSitConfigDomain(domainInImage, domainScript);
       Assert.assertNotNull(domain);
+      
+      // Create the MySql db container  
+      copyMySqlFile();
+      ExecResult result = TestUtils.exec("kubectl create -f " + mysqlYamlFile);
+      Assert.assertEquals(0, result.exitValue());
       domainYaml =
           BaseTest.getUserProjectsDir()
               + "/weblogic-domains/"
@@ -240,8 +241,8 @@ public class SitConfig extends BaseTest {
     LoggerHelper.getLocal().log(Level.INFO, "Copying {0}", src.toString());
     Charset charset = StandardCharsets.UTF_8;
     String content = new String(Files.readAllBytes(src), charset);
-    content = content.replaceAll("@NAMESPACE@", "default");
-    content = content.replaceAll("@DOMAIN_UID@", DOMAINUID);
+    content = content.replaceAll("@NAMESPACE@", domain.getDomainNs());
+    content = content.replaceAll("@DOMAIN_UID@", domain.getDomainUid());
     content = content.replaceAll("31306", MYSQL_DB_PORT);
     LoggerHelper.getLocal().log(Level.INFO, "to {0}", dst.toString());
     Files.write(dst, content.getBytes(charset));
