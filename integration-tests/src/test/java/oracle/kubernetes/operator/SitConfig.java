@@ -73,14 +73,10 @@ public class SitConfig extends BaseTest {
         domainNS = ((ArrayList<String>) operatorMap.get("domainNamespaces")).get(0);
       }
       TEST_RES_DIR = BaseTest.getProjectRoot() + "/integration-tests/src/test/resources/";
-      sitconfigTmpDir = BaseTest.getResultDir() + "/sitconfigtemp";
-      mysqltmpDir = sitconfigTmpDir + "/mysql";
-      configOverrideDir = sitconfigTmpDir + "/configoverridefiles";
-      mysqlYamlFile = mysqltmpDir + "/mysql-dbservices.yml";
+      sitconfigTmpDir = BaseTest.getResultDir() + "/sitconfigtemp";      
+      configOverrideDir = sitconfigTmpDir + "/configoverridefiles";      
       Files.createDirectories(Paths.get(sitconfigTmpDir));
       Files.createDirectories(Paths.get(configOverrideDir));
-      Files.createDirectories(Paths.get(mysqltmpDir));
-          
       MYSQL_DB_PORT = mysqlPort;
 
       if (!OPENSHIFT) {
@@ -103,9 +99,7 @@ public class SitConfig extends BaseTest {
       Assert.assertNotNull(domain);
       
       // Create the MySql db container  
-      copyMySqlFile();
-      ExecResult result = TestUtils.exec("kubectl create -f " + mysqlYamlFile);
-      Assert.assertEquals(0, result.exitValue());
+      createMySQLContainer();      
       domainYaml =
           BaseTest.getUserProjectsDir()
               + "/weblogic-domains/"
@@ -235,7 +229,10 @@ public class SitConfig extends BaseTest {
    *
    * @throws IOException when copying files from source location to staging area fails
    */
-  private static void copyMySqlFile() throws IOException {
+  private static void createMySQLContainer() throws Exception {
+    mysqltmpDir = sitconfigTmpDir + "/mysql";
+    mysqlYamlFile = mysqltmpDir + "/" + domain.getDomainUid() + "/mysql-dbservices.yml";
+    Files.createDirectories(Paths.get(mysqltmpDir));
     final Path src = Paths.get(TEST_RES_DIR + "/mysql/mysql-dbservices.ymlt");
     final Path dst = Paths.get(mysqlYamlFile);    
     LoggerHelper.getLocal().log(Level.INFO, "Copying {0}", src.toString());
@@ -246,6 +243,8 @@ public class SitConfig extends BaseTest {
     content = content.replaceAll("31306", MYSQL_DB_PORT);
     LoggerHelper.getLocal().log(Level.INFO, "to {0}", dst.toString());
     Files.write(dst, content.getBytes(charset));
+    ExecResult result = TestUtils.exec("kubectl create -f " + mysqlYamlFile);
+    Assert.assertEquals(0, result.exitValue());
   }
 
   /**
