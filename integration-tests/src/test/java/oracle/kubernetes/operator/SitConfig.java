@@ -230,8 +230,8 @@ public class SitConfig extends BaseTest {
    * @throws IOException when copying files from source location to staging area fails
    */
   private static void createMySQLContainer() throws Exception {
-    mysqltmpDir = sitconfigTmpDir + "/mysql";
-    mysqlYamlFile = mysqltmpDir + "/" + domain.getDomainUid() + "/mysql-dbservices.yml";
+    mysqltmpDir = sitconfigTmpDir + "/mysql/" + domain.getDomainUid();
+    mysqlYamlFile = mysqltmpDir + "/mysql-dbservices.yml";
     Files.createDirectories(Paths.get(mysqltmpDir));
     final Path src = Paths.get(TEST_RES_DIR + "/mysql/mysql-dbservices.ymlt");
     final Path dst = Paths.get(mysqlYamlFile);    
