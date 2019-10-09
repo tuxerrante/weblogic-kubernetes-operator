@@ -64,7 +64,7 @@ public class SitConfig extends BaseTest {
     if (FULLTEST) {
       // initialize test properties and create the directories
       initialize(APP_PROPS_FILE, testClassName);
-      domainUid +=domainInImage;
+      domainUid += domainInImage;
       // create operator1
       if (operator1 == null) {
         Map<String, Object> operatorMap =
