@@ -26,7 +26,7 @@ import org.junit.Assert;
 /** JUnit test class used for testing configuration override use cases. */
 public class SitConfig extends BaseTest {
 
-  private static final String DOMAINUID = "customsitconfigdomain";
+  private static String domainUid = "customsitconfigdomain";
   private static final String ADMINPORT = "30710";
   private static final int T3CHANNELPORT = 30091;
   private static String MYSQL_DB_PORT;
@@ -64,6 +64,7 @@ public class SitConfig extends BaseTest {
     if (FULLTEST) {
       // initialize test properties and create the directories
       initialize(APP_PROPS_FILE, testClassName);
+      domainUid +=domainInImage;
       // create operator1
       if (operator1 == null) {
         Map<String, Object> operatorMap =
@@ -163,7 +164,7 @@ public class SitConfig extends BaseTest {
     }
     domainMap.put("configOverrides", "sitconfigcm");
     domainMap.put("configOverridesFile", configOverrideDir);
-    domainMap.put("domainUID", DOMAINUID);
+    domainMap.put("domainUID", domainUid);
     domainMap.put("adminNodePort", new Integer(ADMINPORT));
     domainMap.put("t3ChannelPort", new Integer(T3CHANNELPORT));
     domainMap.put("createDomainPyScript", domainScript);
@@ -228,7 +229,7 @@ public class SitConfig extends BaseTest {
   }
 
   /**
-   * A utility method to copy MySQL yaml template file replacing the NAMESPACE and DOMAINUID.
+   * A utility method to copy MySQL yaml template file replacing the NAMESPACE and domainUid.
    *
    * @throws IOException when copying files from source location to staging area fails
    */
@@ -493,7 +494,7 @@ public class SitConfig extends BaseTest {
     Path path = Paths.get(JDBC_RES_SCRIPT);
     String content = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
     content = content.replaceAll("JDBC_URL", JDBC_URL);
-    content = content.replaceAll("DOMAINUID", DOMAINUID);
+    content = content.replaceAll("DOMAINUID", domainUid);
     if (getWeblogicImageTag().contains(PS3_TAG)) {
       content = content.replaceAll(JDBC_DRIVER_NEW, JDBC_DRIVER_OLD);
     }
@@ -550,19 +551,19 @@ public class SitConfig extends BaseTest {
     }
 
     int clusterReplicas =
-        TestUtils.getClusterReplicas(DOMAINUID, domain.getClusterName(), domain.getDomainNs());
+        TestUtils.getClusterReplicas(domainUid, domain.getClusterName(), domain.getDomainNs());
 
     // restart the pods so that introspector can run and replace files with new secret if changed
     // and with new config override files
     String patchStr = "'{\"spec\":{\"serverStartPolicy\":\"NEVER\"}}'";
-    TestUtils.kubectlpatch(DOMAINUID, domain.getDomainNs(), patchStr);
+    TestUtils.kubectlpatch(domainUid, domain.getDomainNs(), patchStr);
     domain.verifyServerPodsDeleted(clusterReplicas);
 
     String cmd =
         "kubectl create configmap -n "
             + domain.getDomainNs()
             + " "
-            + DOMAINUID
+            + domainUid
             + "-sitconfigcm --from-file="
             + configOverrideDir
             + " -o yaml --dry-run | kubectl replace -f -";
@@ -571,7 +572,7 @@ public class SitConfig extends BaseTest {
     TestUtils.exec(cmd, true);
 
     patchStr = "'{\"spec\":{\"serverStartPolicy\":\"IF_NEEDED\"}}'";
-    TestUtils.kubectlpatch(DOMAINUID, domain.getDomainNs(), patchStr);
+    TestUtils.kubectlpatch(domainUid, domain.getDomainNs(), patchStr);
     domain.verifyDomainCreated();
   }
 
