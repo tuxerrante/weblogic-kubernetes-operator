@@ -314,7 +314,7 @@ function createWLDomain() {
         previous_version=$(cat ${inventory_wls_version})
         if [ "${current_version}" != "${previous_version}" ]; then
             trace "version different: before: ${previous_version} current: ${current_version}"
-            version_changed=1
+            #version_changed=1
             # TODO: make sure understand the impact for JRF first
             # handle version upgrade
         fi
