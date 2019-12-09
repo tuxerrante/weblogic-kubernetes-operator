@@ -65,6 +65,7 @@ public class ConfigMapHelperTest {
     "startNodeManager.sh",
     "utils.py",
     "utils.sh",
+    "traceUtils.sh",
     "wlst.sh",
     "tailLog.sh",
     "monitorLog.sh"
