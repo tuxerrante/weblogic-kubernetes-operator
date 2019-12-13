@@ -316,16 +316,16 @@ function createWLDomain() {
   local secrets_changed=0
   trace "current version "${current_version}
 
-#  getSecretsMD5
-#  local current_secrets_md5=$(cat /tmp/secrets.md5)
-#
-#  if [ -f ${inventory_secrets_md5} ] ; then
-#    previous_secrets_md5=$(cat ${inventory_secrets_md5})
-#    if [ "${current_secrets_md5}" != "${previous_secrets_md5}" ]; then
-#      trace "secrets different: before: ${previous_secrets_md5} current: ${current_secrets_md5}"
-#      secrets_changed=1
-#    fi
-#  fi
+  getSecretsMD5
+  local current_secrets_md5=$(cat /tmp/secrets.md5)
+
+  if [ -f ${inventory_secrets_md5} ] ; then
+    previous_secrets_md5=$(cat ${inventory_secrets_md5})
+    if [ "${current_secrets_md5}" != "${previous_secrets_md5}" ]; then
+      trace "secrets different: before: ${previous_secrets_md5} current: ${current_secrets_md5}"
+      secrets_changed=1
+    fi
+  fi
 
   if [ -f ${inventory_wls_version} ] ; then
     previous_version=$(cat ${inventory_wls_version})
@@ -453,11 +453,11 @@ function getSecretsMD5() {
   local tmp_secrets="/tmp/tmpsecrets"
 
   if [ -d "${override_secrets}" ] ; then
-    find $override_secrets -type l -print -not -name "..data" | xargs cat > ${tmp_secrets}
+    find $override_secrets -type l -not -name "..data" -print | xargs cat > ${jarname}
   fi
 
   if [ -d "${weblogic_secrets}" ] ; then
-    find ${weblogic_secrets} -type l -print -not -name "..data" | xargs cat >> ${tmp_secrets}
+    find ${weblogic_secrets} -type l -not -name "..data" -print | xargs cat >> ${jarname}
   fi
 
   if [ ! -f "${jarname}" ] ; then
@@ -466,6 +466,7 @@ function getSecretsMD5() {
   secrets_md5=$(md5sum ${jarname} | cut -d' ' -f1)
   echo ${secrets_md5} > /tmp/secrets.md5
   trace "Found secrets ${secrets_md5}"
+
   rm ${jarname}
 }
 #
