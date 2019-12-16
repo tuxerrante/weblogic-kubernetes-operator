@@ -140,7 +140,7 @@ if [ "$SHARED_CLUSTER" = "true" ]; then
   
   echo "Test Suite is running locally on a shared cluster and k8s is running on remote nodes."
   echo "Clean shared cluster"
-  cleanup
+  #cleanup
     
   
   export IMAGE_PULL_SECRET_OPERATOR=$IMAGE_PULL_SECRET_OPERATOR
