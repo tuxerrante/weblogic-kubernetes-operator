@@ -240,7 +240,11 @@ public class ItOperatorUpgrade extends BaseTest {
    * @throws Exception when upgrade fails or basic usecase testing or scaling fails.
    */
   private void upgradeOperator(boolean restart) throws Exception {
+    TestUtils.exec("docker images", true);
     operator.callHelmUpgrade("image=" + OP_TARGET_RELEASE);
+    TestUtils.exec("kubectl get all --all-namespaces", true);
+    TestUtils.exec("kubectl describe -n " + DOM_NS + " domain", true);
+    TestUtils.exec("kubectl -n " + DOM_NS + " logs " + DUID + "-admin-server", true);
     if (restart) {
       checkDomainRollingRestarted();
     }
@@ -336,6 +340,9 @@ public class ItOperatorUpgrade extends BaseTest {
     domain.verifyServicesCreated();
     domain.verifyServersReady();
     LoggerHelper.getLocal().log(Level.INFO, "+++++++++++++++Ending Test Setup+++++++++++++++++++++");
+    TestUtils.exec("kubectl get all --all-namespaces", true);
+    TestUtils.exec("kubectl describe -n " + DOM_NS + " domain", true);
+    TestUtils.exec("kubectl -n " + DOM_NS + " logs " + DUID + "-admin-server", true);
   }
 
 }
