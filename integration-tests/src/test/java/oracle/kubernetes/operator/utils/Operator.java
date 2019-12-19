@@ -329,6 +329,7 @@ public class Operator {
         .append(" --set \"imagePullPolicy=")
         .append(imagePullPolicy)
         .append("\" --wait --timeout 180");
+    TestUtils.exec("cat " + generatedInputYamlFile, true);
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
     ExecResult result = ExecCommand.exec(cmd.toString());
     if (result.exitValue() != 0) {
