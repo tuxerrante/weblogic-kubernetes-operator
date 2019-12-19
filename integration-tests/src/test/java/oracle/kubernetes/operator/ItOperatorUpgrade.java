@@ -242,8 +242,11 @@ public class ItOperatorUpgrade extends BaseTest {
   private void upgradeOperator(boolean restart) throws Exception {
     TestUtils.exec("docker images", true);
     operator.callHelmUpgrade("image=" + OP_TARGET_RELEASE);
-    TestUtils.exec("kubectl get all --all-namespaces", true);
-    TestUtils.exec("kubectl describe -n " + DOM_NS + " domain", true);
+    for(int i = 0; i < 100; i++){
+      TestUtils.exec("kubectl get all --all-namespaces", true);
+      TestUtils.exec("kubectl describe -n " + DOM_NS + " domain", true);
+      Thread.sleep(2000);
+    }
     TestUtils.exec("kubectl -n " + DOM_NS + " logs " + DUID + "-admin-server", true);
     if (restart) {
       checkDomainRollingRestarted();
