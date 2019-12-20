@@ -339,8 +339,8 @@ public class Operator {
     }
     String outputStr = result.stdout().trim();
     LoggerHelper.getLocal().log(Level.INFO, "Command returned " + outputStr);
-    TestUtils.exec("cd " + operatorMap.get("operatorGitVersionDir") +
-            "/weblogic-kubernetes-operator && "
+    TestUtils.exec("cd " + operatorMap.get("operatorGitVersionDir")
+            + "/weblogic-kubernetes-operator && "
             + "cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
   }
 
