@@ -330,6 +330,7 @@ public class Operator {
         .append(imagePullPolicy)
         .append("\" --wait --timeout 180");
     TestUtils.exec("cat " + generatedInputYamlFile, true);
+    TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
     ExecResult result = ExecCommand.exec(cmd.toString());
     if (result.exitValue() != 0) {
