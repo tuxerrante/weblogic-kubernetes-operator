@@ -453,11 +453,11 @@ function getSecretsMD5() {
   local tmp_secrets="/tmp/tmpsecrets"
 
   if [ -d "${override_secrets}" ] ; then
-    find $override_secrets -type l -not -name "..data" -print | xargs cat > ${jarname}
+    find ${override_secrets} -type l -not -name "..data" -print | sort | xargs cat >> ${jarname}
   fi
 
   if [ -d "${weblogic_secrets}" ] ; then
-    find ${weblogic_secrets} -type l -not -name "..data" -print | xargs cat >> ${jarname}
+    find ${weblogic_secrets} -type l -not -name "..data" -print | sort | xargs cat >> ${jarname}
   fi
 
   if [ ! -f "${jarname}" ] ; then
