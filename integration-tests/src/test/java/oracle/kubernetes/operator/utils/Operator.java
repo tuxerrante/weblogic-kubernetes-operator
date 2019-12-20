@@ -333,8 +333,8 @@ public class Operator {
         .append("\" --wait --timeout 180");
     TestUtils.exec("cat " + generatedInputYamlFile, true);    
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
+    ExecResult result = ExecCommand.exec(cmd.toString());    
     TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
-    ExecResult result = ExecCommand.exec(cmd.toString());
     if (result.exitValue() != 0) {
       reportHelmFailure(cmd.toString(), result);
     }
