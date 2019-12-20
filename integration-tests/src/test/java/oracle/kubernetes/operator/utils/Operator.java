@@ -334,12 +334,14 @@ public class Operator {
     TestUtils.exec("cat " + generatedInputYamlFile, true);    
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
     ExecResult result = ExecCommand.exec(cmd.toString());    
-    TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
     if (result.exitValue() != 0) {
       reportHelmFailure(cmd.toString(), result);
     }
     String outputStr = result.stdout().trim();
     LoggerHelper.getLocal().log(Level.INFO, "Command returned " + outputStr);
+    TestUtils.exec("cd " + operatorMap.get("operatorGitVersionDir") +
+            "/weblogic-kubernetes-operator && "
+            + "cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
   }
 
   public void callHelmUpgrade(String upgradeSet) throws Exception {
