@@ -9,13 +9,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import oracle.kubernetes.operator.BaseTest;
 
-/**
- * Operator class with all the utility methods for Operator.
- */
+/** Operator class with all the utility methods for Operator. */
 public class Operator {
 
   public static final String CREATE_OPERATOR_SCRIPT_MESSAGE =
@@ -65,11 +61,11 @@ public class Operator {
    * Takes operator input properties which needs to be customized and generates a operator input
    * yaml file, with option to create operator namespace, serviceaccount, domain namespace.
    *
-   * @param inputMap       input
-   * @param opNS           opNS
-   * @param opSA           opSA
+   * @param inputMap input
+   * @param opNS opNS
+   * @param opSA opSA
    * @param targetdomainNS target
-   * @param restCertType   cert
+   * @param restCertType cert
    * @throws Exception exception
    */
   public Operator(
@@ -172,8 +168,10 @@ public class Operator {
           throw new RuntimeException(
               "FAILURE: The WebLogic operator deployment is not available, after waiting 300 seconds");
         }
-        LoggerHelper.getLocal().log(Level.INFO,
-            "status is " + availableReplica + ", iteration " + i + " of " + maxIterationsOp);
+        LoggerHelper.getLocal()
+            .log(
+                Level.INFO,
+                "status is " + availableReplica + ", iteration " + i + " of " + maxIterationsOp);
         Thread.sleep(waitTimeOp * 1000);
 
       } else {
@@ -233,9 +231,9 @@ public class Operator {
   /**
    * scale the given cluster in a domain to the given number of servers using Operator REST API.
    *
-   * @param domainUid   uid
+   * @param domainUid uid
    * @param clusterName cluster
-   * @param numOfMS     num
+   * @param numOfMS num
    * @throws Exception exception
    */
   public void scale(String domainUid, String clusterName, int numOfMS) throws Exception {
@@ -331,17 +329,20 @@ public class Operator {
         .append(" --set \"imagePullPolicy=")
         .append(imagePullPolicy)
         .append("\" --wait --timeout 180");
-    TestUtils.exec("cat " + generatedInputYamlFile, true);    
+    TestUtils.exec("cat " + generatedInputYamlFile, true);
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
-    ExecResult result = ExecCommand.exec(cmd.toString());    
+    ExecResult result = ExecCommand.exec(cmd.toString());
     if (result.exitValue() != 0) {
       reportHelmFailure(cmd.toString(), result);
     }
     String outputStr = result.stdout().trim();
     LoggerHelper.getLocal().log(Level.INFO, "Command returned " + outputStr);
-    TestUtils.exec("cd " + operatorMap.get("operatorGitVersionDir")
+    TestUtils.exec(
+        "cd "
+            + operatorMap.get("operatorGitVersionDir")
             + "/weblogic-kubernetes-operator && "
-            + "cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
+            + "cat kubernetes/charts/weblogic-operator/Chart.yaml",
+        true);
   }
 
   public void callHelmUpgrade(String upgradeSet) throws Exception {
@@ -448,8 +449,10 @@ public class Operator {
         if (i == maxIterationsOp - 1) {
           throw new RuntimeException("FAILURE: Operator fail to be deleted");
         }
-        LoggerHelper.getLocal().log(Level.INFO, "status is " + result.stdout()
-            + ", iteration " + i + " of " + maxIterationsOp);
+        LoggerHelper.getLocal()
+            .log(
+                Level.INFO,
+                "status is " + result.stdout() + ", iteration " + i + " of " + maxIterationsOp);
         Thread.sleep(waitTimeOp * 1000);
       } else {
         break;
@@ -472,7 +475,10 @@ public class Operator {
       throw new RuntimeException("FAILURE: releaseName cann't be null");
     }
     if (opNS) {
-      ExecCommand.exec("kubectl --grace-period=1 --timeout=1s delete namespace " + operatorNS + " --ignore-not-found");
+      ExecCommand.exec(
+          "kubectl --grace-period=1 --timeout=1s delete namespace "
+              + operatorNS
+              + " --ignore-not-found");
       Thread.sleep(10000);
       // create operator namespace
       TestUtils.exec("kubectl create namespace " + operatorNS, true);
@@ -512,8 +518,10 @@ public class Operator {
     }
     // customize the inputs yaml file to generate a self-signed cert for the external Operator REST
     // https port
-    externalRestEnabled = operatorMap.containsKey("externalRestEnabled")
-        ? (new Boolean((operatorMap.get("externalRestEnabled")).toString()).booleanValue()) : externalRestEnabled;
+    externalRestEnabled =
+        operatorMap.containsKey("externalRestEnabled")
+            ? (new Boolean((operatorMap.get("externalRestEnabled")).toString()).booleanValue())
+            : externalRestEnabled;
     if (externalRestEnabled) {
       if (operatorMap.get("externalRestHttpsPort") != null) {
         try {
@@ -534,9 +542,9 @@ public class Operator {
         && System.getenv("IMAGE_TAG_OPERATOR") != null
         && operatorMap.containsKey("operatorImageName")
         && operatorMap.containsKey("operatorImageTag")) {
-          operatorMap.put(
+      operatorMap.put(
           "image",
-          operatorMap.get("operatorImageName") + ":" + operatorMap.get("operatorImageTag"));        
+          operatorMap.get("operatorImageName") + ":" + operatorMap.get("operatorImageTag"));
     } else if (System.getenv("IMAGE_NAME_OPERATOR") != null
         && System.getenv("IMAGE_TAG_OPERATOR") != null) {
       operatorMap.put(
@@ -642,5 +650,4 @@ public class Operator {
     /* no Rest Support */
     NONE
   }
-
 }
