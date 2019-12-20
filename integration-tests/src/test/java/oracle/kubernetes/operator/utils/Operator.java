@@ -343,6 +343,8 @@ public class Operator {
   public void callHelmUpgrade(String upgradeSet) throws Exception {
     StringBuffer cmd = new StringBuffer("cd ");
     cmd.append(BaseTest.getProjectRoot())
+        .append(" && pwd")
+        .append(" && ls kubernetes/charts/weblogic-operator ")
         .append(" && helm upgrade ")
         .append(operatorMap.get("releaseName"))
         .append(" kubernetes/charts/weblogic-operator ")
@@ -350,7 +352,7 @@ public class Operator {
         .append(upgradeSet)
         .append("\" --reuse-values ")
         .append(" --wait --timeout 180");
-    TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
+    // TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
     ExecResult result = ExecCommand.exec(cmd.toString());
     if (result.exitValue() != 0) {
