@@ -314,6 +314,8 @@ public class Operator {
       cmd.append("cd ");
       cmd.append(operatorMap.get("operatorGitVersionDir"))
           .append("/weblogic-kubernetes-operator")
+          .append(" && pwd")
+          .append(" && ls kubernetes/charts/weblogic-operator ")
           .append(" && helm install kubernetes/charts/weblogic-operator ");
     } else {
       cmd.append("cd ");
@@ -329,9 +331,9 @@ public class Operator {
         .append(" --set \"imagePullPolicy=")
         .append(imagePullPolicy)
         .append("\" --wait --timeout 180");
-    TestUtils.exec("cat " + generatedInputYamlFile, true);
-    TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
+    TestUtils.exec("cat " + generatedInputYamlFile, true);    
     LoggerHelper.getLocal().log(Level.INFO, "Running " + cmd);
+    TestUtils.exec("cat kubernetes/charts/weblogic-operator/Chart.yaml", true);
     ExecResult result = ExecCommand.exec(cmd.toString());
     if (result.exitValue() != 0) {
       reportHelmFailure(cmd.toString(), result);
