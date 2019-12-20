@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
-
 import oracle.kubernetes.operator.utils.Domain;
 import oracle.kubernetes.operator.utils.ExecResult;
 import oracle.kubernetes.operator.utils.LoggerHelper;
@@ -334,9 +333,10 @@ public class ItOperatorUpgrade extends BaseTest {
     wlstDomainMap.put("projectRoot", opUpgradeTmpDir + "/weblogic-kubernetes-operator");
     domain = TestUtils.createDomain(wlstDomainMap);
     // TestUtils.exec("kubectl get all --all-namespaces", true);
-    domain.verifyPodsCreated();
-    domain.verifyServicesCreated();
-    domain.verifyServersReady();
+    // domain.verifyPodsCreated();
+    // domain.verifyServicesCreated();
+    // domain.verifyServersReady();
+    Thread.sleep(60000);
     LoggerHelper.getLocal()
         .log(Level.INFO, "+++++++++++++++Ending Test Setup+++++++++++++++++++++");
     TestUtils.exec("kubectl get all --all-namespaces", true);
