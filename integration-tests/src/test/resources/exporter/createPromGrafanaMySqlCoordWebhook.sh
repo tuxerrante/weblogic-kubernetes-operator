@@ -60,8 +60,12 @@ cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
 docker images | grep webhook
 kubectl create ns webhook
-sed -i "s/Newer/Always/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
+sed -i "s/Never/IfNotPresent/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
+cat  ${monitoringExporterEndToEndDir}/webhook/server.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/webhook/server.yaml
+POD_NAME=$(kubectl get pod -l app=webhook -o jsonpath="{.items[0].metadata.name}" -n webhook )
+kubectl describe pods ${POD_NAME} -n webhook
+kubectl log ${POD_NAME} -n webhook
 
 #create coordinator
 cd ${resourceExporterDir}
