@@ -58,7 +58,9 @@ helm install --wait --name grafana --namespace monitoring --values  ${monitoring
 
 cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
+docker images | grep webhook
 kubectl create ns webhook
+sed -i "s/Newer/Always/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/webhook/server.yaml
 
 #create coordinator
