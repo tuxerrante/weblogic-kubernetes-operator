@@ -791,7 +791,7 @@ public class ItMonitoringExporter extends BaseTest {
       configureDomainInPrometheus(domainNS1, domainNS1, domainNS2, domainNS2);
       createWlsImageAndDeploy();
       checkPromGrafana("wls_servlet_execution_time_average", "test-webapp");
-      fireAlert();
+      //fireAlert();
       addMonitoringToExistedDomain();
     } catch (Exception ex) {
       //switch Perforce to use domain in pv
@@ -1080,7 +1080,7 @@ public class ItMonitoringExporter extends BaseTest {
             + GRAFANA_CHART_VERSION + " " + domainNS1 + " " + domainNS2);
 
     String webhookPod = getPodName("app=webhook", "webhook");
-    TestUtils.checkPodReady(webhookPod, "webhook");
+    //TestUtils.checkPodReady(webhookPod, "webhook");
 
     //update with current WDT version
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domainBuilder/build.sh",
