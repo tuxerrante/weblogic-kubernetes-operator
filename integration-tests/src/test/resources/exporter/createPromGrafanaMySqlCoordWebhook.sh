@@ -43,6 +43,7 @@ for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kub
 export appname=prometheus
 for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kubectl delete ${p} -n monitoring --force --grace-period=0 --ignore-not-found; done
 
+promVersionArgs=9.7.4
 helm install --debug --wait --name prometheus --namespace monitoring --values  ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml stable/prometheus  --version ${promVersionArgs}
 
 helm list --all
