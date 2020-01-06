@@ -18,6 +18,8 @@ sed -i "s/3306\/@@PROP:DOMAIN_NAME@@/3306\/domain1/g" ${monitoringExporterEndToE
 cp ${resourceExporterDir}/promvalues.yaml ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml
 
 sed -i "s/default;domain1/${domainNS};${domainNS}/g" ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml
+kubectl delete -f ${monitoringExporterEndToEndDir}/mysql/mysql.yaml
+kubectl delete -f ${monitoringExporterEndToEndDir}/mysql/persistence.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/mysql/persistence.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/mysql/mysql.yaml
 
@@ -43,8 +45,9 @@ for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kub
 export appname=prometheus
 for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kubectl delete ${p} -n monitoring --force --grace-period=0 --ignore-not-found; done
 
-helm install --wait --name prometheus --namespace monitoring --values  ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml stable/prometheus  --version ${promVersionArgs}
+helm install --debug --wait --name prometheus --namespace monitoring --values  ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml stable/prometheus  --version ${promVersionArgs}
 
+helm list --all
 
 POD_NAME=$(kubectl get pod -l app=prometheus -n monitoring -o jsonpath="{.items[0].metadata.name}")
 kubectl describe $POD_NAME -n monitoring
@@ -65,7 +68,7 @@ cat  ${monitoringExporterEndToEndDir}/webhook/server.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/webhook/server.yaml
 POD_NAME=$(kubectl get pod -l app=webhook -o jsonpath="{.items[0].metadata.name}" -n webhook )
 kubectl describe pods ${POD_NAME} -n webhook
-kubectl log ${POD_NAME} -n webhook
+kubectl logs ${POD_NAME} -n webhook
 
 #create coordinator
 cd ${resourceExporterDir}
