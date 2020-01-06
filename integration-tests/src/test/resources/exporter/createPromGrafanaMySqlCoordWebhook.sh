@@ -18,8 +18,6 @@ sed -i "s/3306\/@@PROP:DOMAIN_NAME@@/3306\/domain1/g" ${monitoringExporterEndToE
 cp ${resourceExporterDir}/promvalues.yaml ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml
 
 sed -i "s/default;domain1/${domainNS};${domainNS}/g" ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml
-kubectl delete -f ${monitoringExporterEndToEndDir}/mysql/mysql.yaml
-kubectl delete -f ${monitoringExporterEndToEndDir}/mysql/persistence.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/mysql/persistence.yaml
 kubectl apply -f ${monitoringExporterEndToEndDir}/mysql/mysql.yaml
 
