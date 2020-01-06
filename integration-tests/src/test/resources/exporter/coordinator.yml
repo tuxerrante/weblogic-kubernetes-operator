@@ -10,6 +10,9 @@ metadata:
     app: coordinator
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: coordinator
   strategy:
     type: Recreate
   template:
