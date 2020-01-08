@@ -77,12 +77,16 @@ kubectl apply -f ${monitoringExporterEndToEndDir}/webhook/server.yaml
 POD_NAME=$(kubectl get pod -l app=webhook -o jsonpath="{.items[0].metadata.name}" -n webhook )
 kubectl describe pods ${POD_NAME} -n webhook
 kubectl logs ${POD_NAME} -n webhook
+echo "Getting info about webhook"
+kubectl get pods -n webhook
 
 #create coordinator
 cd ${resourceExporterDir}
 cp coordinator.yml coordinator_${domainNS}.yaml
 sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
 sed -i "s/config_coordinator/phx.ocir.io\/weblogick8s\/config_coordinator/g"  coordinator_${domainNS}.yaml
+cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
+kubectl get pods -n ${domainNS}
 
 echo "Run the script [createPromGrafanaMySqlCoordWebhook.sh] ..."
