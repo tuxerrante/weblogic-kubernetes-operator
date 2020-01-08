@@ -60,6 +60,12 @@ helm install --wait --name grafana --namespace monitoring --values  ${monitoring
 
 cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
+docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
+docker push webhook-log:1.0
+if [ ! "$?" = "0" ] ; then
+   echo "Error: Could not push the image to $REPO_REGISTRY".
+  #exit 1
+fi
 echo 'docker list images for webhook'
 docker images | grep webhook
 kubectl create ns webhook
