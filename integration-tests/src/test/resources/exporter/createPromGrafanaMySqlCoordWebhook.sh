@@ -72,8 +72,15 @@ docker images | grep webhook
 kubectl create ns webhook
 #sed -i "s/Never/Always/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
 #sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
+kubectl create secret docker-registry ocirsecret \
+                    --docker-server=$REPO_REGISTRY \
+                    --docker-username=$REPO_USERNAME \
+                    --docker-password=$REPO_PASSWORD \
+                    --docker-email=$REPO_EMAIL  \
+                    --dry-run -o yaml | kubectl apply -f -
+
 sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
-sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  ${resourceExporterDir}/server.yaml
+#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  ${resourceExporterDir}/server.yaml
 cat ${resourceExporterDir}/server.yaml
 kubectl apply -f ${resourceExporterDir}/server.yaml
 POD_NAME=$(kubectl get pod -l app=webhook -o jsonpath="{.items[0].metadata.name}" -n webhook )
@@ -87,7 +94,7 @@ cd ${resourceExporterDir}
 cp coordinator.yml coordinator_${domainNS}.yaml
 sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
 sed -i "s/config_coordinator/phx.ocir.io\/weblogick8s\/config_coordinator/g"  coordinator_${domainNS}.yaml
-sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
+#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
 cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl get pods -n ${domainNS}

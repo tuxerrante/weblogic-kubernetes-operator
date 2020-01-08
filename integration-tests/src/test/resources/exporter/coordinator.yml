@@ -27,7 +27,7 @@ spec:
           ports:
             - containerPort: 8999
       imagePullSecrets:
-        - name: docker-store
+        - name: ocirsecret
       restartPolicy: Always
 ---
 apiVersion: v1
