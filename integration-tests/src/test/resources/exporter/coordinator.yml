@@ -26,6 +26,8 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8999
+      imagePullSecrets:
+        - name: docker-store
       restartPolicy: Always
 ---
 apiVersion: v1
