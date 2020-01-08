@@ -85,6 +85,7 @@ cd ${resourceExporterDir}
 cp coordinator.yml coordinator_${domainNS}.yaml
 sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
 sed -i "s/config_coordinator/phx.ocir.io\/weblogick8s\/config_coordinator/g"  coordinator_${domainNS}.yaml
+sed -i "s/docker-store/${IMAGE_PULL_SECRET_WEBLOGIC}/g"  coordinator_${domainNS}.yaml
 cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl get pods -n ${domainNS}
