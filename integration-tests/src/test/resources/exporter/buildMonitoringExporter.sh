@@ -29,7 +29,8 @@ bash get${monitoringExporterVersion}.sh ${resourceExporterDir}/rest_webapp.yml
 cd ${monitoringExporterSrcDir}/config_coordinator
 docker build -t config_coordinator .
 docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
-docker push config_coordinator:latest
+docker tag config_coordinator:latest phx.ocir.io/weblogick8s/config_coordinator:latest 
+docker push phx.ocir.io/weblogick8s/config_coordinator:latest
 if [ ! "$?" = "0" ] ; then
    echo "Error: Could not push the image to $REPO_REGISTRY".
   #exit 1
