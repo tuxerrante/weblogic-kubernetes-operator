@@ -82,8 +82,10 @@ kubectl create secret docker-registry ocirsecret \
 sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
 #sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  ${resourceExporterDir}/server.yaml
 cat ${resourceExporterDir}/server.yaml
-kubectl apply -f ${resourceExporterDir}/server.yaml
+kubectl apply -f ${resourceExporterDir}/server.yaml --validate=false
+kubectl get pods -n webhook
 POD_NAME=$(kubectl get pod -l app=webhook -o jsonpath="{.items[0].metadata.name}" -n webhook )
+
 kubectl describe pods ${POD_NAME} -n webhook
 kubectl logs ${POD_NAME} -n webhook
 echo "Getting info about webhook"
