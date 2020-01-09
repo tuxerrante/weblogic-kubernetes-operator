@@ -19,7 +19,7 @@ spec:
         app: webhook
     spec:  
       containers:
-      - image: phx.ocir.io/weblogick8s/webhook-log:1.0
+      - image: webhook-log:1.0
         imagePullPolicy: Always
         name: webhook
       imagePullSecrets:
