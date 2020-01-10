@@ -1044,7 +1044,7 @@ public class ItMonitoringExporter extends BaseTest {
     replaceStringInFile(resourceExporterDir + "/domain1.yaml",
         "30701", String.valueOf(30800 + getNewSuffixCount()));
     // apply new domain yaml and verify pod restart
-    crdCmd =
+    String crdCmd =
         " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
     //" kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
     TestUtils.exec(crdCmd);
@@ -1066,7 +1066,7 @@ public class ItMonitoringExporter extends BaseTest {
             + ":"
             + wlsPassword
             + "@" + domainNS2 + "-managed-server-1:8001/wls-exporter/metrics";
-    result = TestUtils.exec(crdCmd);
+    ExecResult result = TestUtils.exec(crdCmd);
     assertTrue((result.stdout().contains("wls_servlet_execution_time_average")));
     crdCmd =
         "kubectl exec -n " + domainNS2 + " curl -- curl http://"
