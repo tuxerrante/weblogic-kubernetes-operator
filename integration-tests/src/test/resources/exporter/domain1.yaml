@@ -17,7 +17,8 @@ spec:
   domainHomeInImage: true
   image: domain1-image:1.0
   imagePullPolicy: "IfNotPresent"
-  imagePullSecrets: ocirsecret
+  imagePullSecrets:
+    - name: ocirsecret
   webLogicCredentialsSecret:
     name: domain1-weblogic-credentials
   includeServerOutInPodLog: true
