@@ -799,7 +799,8 @@ public class ItMonitoringExporter extends BaseTest {
       throw ex;
     } finally {
       String crdCmd =
-          " kubectl delete -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
+          //" kubectl delete -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
+          " kubectl delete -f " + resourceExporterDir + "/domain1.yaml";
       ExecCommand.exec(crdCmd);
       crdCmd = "kubectl delete secret " + domainNS2 + "-weblogic-credentials";
       ExecCommand.exec(crdCmd);
@@ -812,10 +813,12 @@ public class ItMonitoringExporter extends BaseTest {
   private void fireAlert() throws Exception {
     LoggerHelper.getLocal().log(Level.INFO, "Fire Alert by changing replca count");
     replaceStringInFile(
-        monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "replicas: 2", "replicas: 1");
+        resourceExporterDir + "/domain1.yaml", "replicas: 2", "replicas: 1");
+    //monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "replicas: 2", "replicas: 1");
     // apply new domain yaml and verify pod restart
     String crdCmd =
-        " kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
+        " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
+    //" kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
     TestUtils.exec(crdCmd);
 
     TestUtils.checkPodReady(domainNS2 + "-admin-server", domainNS2);
@@ -1006,14 +1009,15 @@ public class ItMonitoringExporter extends BaseTest {
             + wlsPassword
             + " wluser1 wlpwd123 | tee buidImage.log";
     TestUtils.exec(command);
-    String crdCmd = " cat " + monitoringExporterEndToEndDir
-        + "/demo-domains/domainBuilder/"
-        + "/buidImage.log";
-    ExecResult result = ExecCommand.exec(crdCmd);
+    //    String crdCmd = " cat " + monitoringExporterEndToEndDir
+    //        + "/demo-domains/domainBuilder/"
+    //        + "/buidImage.log";
+    //    ExecResult result = ExecCommand.exec(crdCmd);
+    /*
     assertFalse(
         result.stdout().contains("BUILD FAILURE"), "Shell script failed: " + result.stdout());
     LoggerHelper.getLocal().log(Level.INFO, "Result output from  the command " + crdCmd + " : " + result.stdout());
-    
+    */
     LoggerHelper.getLocal().log(Level.INFO, " Starting to create secret");
     command =
         "kubectl -n " + domainNS2 + " create secret generic " + domainNS2 + "-weblogic-credentials "
@@ -1023,6 +1027,7 @@ public class ItMonitoringExporter extends BaseTest {
             + wlsPassword;
     TestUtils.exec(command);
     //update with current WDT version
+    /*
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "v3", "v6");
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "domain1", domainNS2);
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "default", domainNS2);
@@ -1030,9 +1035,18 @@ public class ItMonitoringExporter extends BaseTest {
         "30703", String.valueOf(31000 + getNewSuffixCount()));
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml",
         "30701", String.valueOf(30800 + getNewSuffixCount()));
+    */
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "v3", "v6");
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "default", domainNS2);
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml",
+        "30703", String.valueOf(31000 + getNewSuffixCount()));
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml",
+        "30701", String.valueOf(30800 + getNewSuffixCount()));
     // apply new domain yaml and verify pod restart
     crdCmd =
-        " kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
+        " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
+    //" kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
     TestUtils.exec(crdCmd);
 
     TestUtils.checkPodReady(domainNS2 + "-admin-server", domainNS2);
