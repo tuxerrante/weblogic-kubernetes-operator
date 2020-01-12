@@ -1018,7 +1018,7 @@ public class ItMonitoringExporter extends BaseTest {
     LoggerHelper.getLocal().log(Level.INFO, "Result output from  the command " + crdCmd + " : " + result.stdout());
     replaceStringInFile(resourceExporterDir + "/domain1.yaml", "v3", "v6");
     //replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
-    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "default", domainNS2);
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
     replaceStringInFile(resourceExporterDir + "/domain1.yaml",
         "30703", String.valueOf(31000 + getNewSuffixCount()));
     replaceStringInFile(resourceExporterDir + "/domain1.yaml",
