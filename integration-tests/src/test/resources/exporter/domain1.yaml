@@ -8,7 +8,7 @@ apiVersion: "weblogic.oracle/v3"
 kind: Domain
 metadata:
   name: domain1
-  namespace: default
+  namespace: domain1
   labels:
     weblogic.resourceVersion: domain-v2
     weblogic.domainUID: domain1
