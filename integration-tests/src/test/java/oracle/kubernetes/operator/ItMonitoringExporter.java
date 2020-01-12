@@ -1009,15 +1009,37 @@ public class ItMonitoringExporter extends BaseTest {
             + wlsPassword
             + " wluser1 wlpwd123 | tee buidImage.log";
     TestUtils.exec(command);
-    //    String crdCmd = " cat " + monitoringExporterEndToEndDir
-    //        + "/demo-domains/domainBuilder/"
-    //        + "/buidImage.log";
-    //    ExecResult result = ExecCommand.exec(crdCmd);
-    /*
+    String crdCmd = " cat " + monitoringExporterEndToEndDir
+        + "/demo-domains/domainBuilder/"
+        + "/buidImage.log";
+    ExecResult result = ExecCommand.exec(crdCmd);
     assertFalse(
         result.stdout().contains("BUILD FAILURE"), "Shell script failed: " + result.stdout());
     LoggerHelper.getLocal().log(Level.INFO, "Result output from  the command " + crdCmd + " : " + result.stdout());
-    */
+    // for remote k8s cluster and domain in image case, push the domain image to OCIR
+    if (BaseTest.SHARED_CLUSTER) {
+      String image = System.getenv("REPO_REGISTRY")
+          + domainNS2
+          + "-image:1.0";
+      crdCmd = " docker tag " + domainNS2
+          + "-image:1.0 " + image;
+
+      result = ExecCommand.exec(crdCmd);
+      TestUtils.loginAndPushImageToOcir(image);
+
+      // create ocir registry secret in the same ns as domain which is used while pulling the domain
+      // image
+
+      TestUtils.createDockerRegistrySecret(
+          "ocirsecret",
+          System.getenv("REPO_REGISTRY"),
+          System.getenv("REPO_USERNAME"),
+          System.getenv("REPO_PASSWORD"),
+          System.getenv("REPO_EMAIL"),
+          domainNS2);
+      replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1-image:1.0", image);
+    }
+
     LoggerHelper.getLocal().log(Level.INFO, " Starting to create secret");
     command =
         "kubectl -n " + domainNS2 + " create secret generic " + domainNS2 + "-weblogic-credentials "
@@ -1037,14 +1059,14 @@ public class ItMonitoringExporter extends BaseTest {
         "30701", String.valueOf(30800 + getNewSuffixCount()));
     */
     replaceStringInFile(resourceExporterDir + "/domain1.yaml", "v3", "v6");
-    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
+    //replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
     replaceStringInFile(resourceExporterDir + "/domain1.yaml", "default", domainNS2);
     replaceStringInFile(resourceExporterDir + "/domain1.yaml",
         "30703", String.valueOf(31000 + getNewSuffixCount()));
     replaceStringInFile(resourceExporterDir + "/domain1.yaml",
         "30701", String.valueOf(30800 + getNewSuffixCount()));
     // apply new domain yaml and verify pod restart
-    String crdCmd =
+    crdCmd =
         " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
     //" kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
     TestUtils.exec(crdCmd);
@@ -1066,7 +1088,7 @@ public class ItMonitoringExporter extends BaseTest {
             + ":"
             + wlsPassword
             + "@" + domainNS2 + "-managed-server-1:8001/wls-exporter/metrics";
-    ExecResult result = TestUtils.exec(crdCmd);
+    result = TestUtils.exec(crdCmd);
     assertTrue((result.stdout().contains("wls_servlet_execution_time_average")));
     crdCmd =
         "kubectl exec -n " + domainNS2 + " curl -- curl http://"
