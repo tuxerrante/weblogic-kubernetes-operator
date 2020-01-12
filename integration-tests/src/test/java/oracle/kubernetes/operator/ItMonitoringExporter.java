@@ -1026,6 +1026,7 @@ public class ItMonitoringExporter extends BaseTest {
     // for remote k8s cluster and domain in image case, push the domain image to OCIR
     if (BaseTest.SHARED_CLUSTER) {
       String image = System.getenv("REPO_REGISTRY")
+          + "/weblogick8s/"
           + domainNS2
           + "-image:1.0";
       crdCmd = " docker tag " + domainNS2
