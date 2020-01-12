@@ -80,7 +80,6 @@ kubectl create secret docker-registry ocirsecret \
                     --dry-run -o yaml | kubectl apply -f -
 
 sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
-sed -i "s/domain1-image:1.0/phx.ocir.io\/weblogick8s\/domain1-image:1.0/g"  ${resourceExporterDir}/domain1.yaml
 #sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  ${resourceExporterDir}/server.yaml
 cat ${resourceExporterDir}/server.yaml
 kubectl apply -f ${resourceExporterDir}/server.yaml --validate=false

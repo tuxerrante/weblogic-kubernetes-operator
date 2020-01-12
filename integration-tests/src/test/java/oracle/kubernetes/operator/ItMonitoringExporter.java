@@ -1016,6 +1016,13 @@ public class ItMonitoringExporter extends BaseTest {
     assertFalse(
         result.stdout().contains("BUILD FAILURE"), "Shell script failed: " + result.stdout());
     LoggerHelper.getLocal().log(Level.INFO, "Result output from  the command " + crdCmd + " : " + result.stdout());
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "v3", "v6");
+    //replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "default", domainNS2);
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml",
+        "30703", String.valueOf(31000 + getNewSuffixCount()));
+    replaceStringInFile(resourceExporterDir + "/domain1.yaml",
+        "30701", String.valueOf(30800 + getNewSuffixCount()));
     // for remote k8s cluster and domain in image case, push the domain image to OCIR
     if (BaseTest.SHARED_CLUSTER) {
       String image = System.getenv("REPO_REGISTRY")
@@ -1037,7 +1044,7 @@ public class ItMonitoringExporter extends BaseTest {
           System.getenv("REPO_PASSWORD"),
           System.getenv("REPO_EMAIL"),
           domainNS2);
-      replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1-image:1.0", image);
+      replaceStringInFile(resourceExporterDir + "/domain1.yaml", domainNS2 + "-image:1.0", image);
     }
 
     LoggerHelper.getLocal().log(Level.INFO, " Starting to create secret");
@@ -1058,13 +1065,7 @@ public class ItMonitoringExporter extends BaseTest {
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml",
         "30701", String.valueOf(30800 + getNewSuffixCount()));
     */
-    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "v3", "v6");
-    //replaceStringInFile(resourceExporterDir + "/domain1.yaml", "domain1", domainNS2);
-    replaceStringInFile(resourceExporterDir + "/domain1.yaml", "default", domainNS2);
-    replaceStringInFile(resourceExporterDir + "/domain1.yaml",
-        "30703", String.valueOf(31000 + getNewSuffixCount()));
-    replaceStringInFile(resourceExporterDir + "/domain1.yaml",
-        "30701", String.valueOf(30800 + getNewSuffixCount()));
+
     // apply new domain yaml and verify pod restart
     crdCmd =
         " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
