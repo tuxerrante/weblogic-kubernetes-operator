@@ -59,7 +59,7 @@ helm install --wait --name grafana --namespace monitoring --values  ${monitoring
 
 cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
-if [ ${SHARED_CLUSTER} = "true" ]
+if [ ${SHARED_CLUSTER} = "true" ] ; then
     docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
     docker tag webhook-log:1.0 $REPO_REGISTRY/$REPO_USERNAME/webhook-log:1.0
     docker push $REPO_REGISTRY/$REPO_USERNAME/webhook-log:1.0
