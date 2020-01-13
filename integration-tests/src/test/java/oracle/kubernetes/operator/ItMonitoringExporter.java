@@ -1115,10 +1115,10 @@ public class ItMonitoringExporter extends BaseTest {
           + "/weblogick8s/"
           + domainNS2
           + "-image:1.0";
-      crdCmd = " docker tag " + domainNS2
+      String crdCmd = " docker tag " + domainNS2
           + "-image:1.0 " + image;
 
-      result = ExecCommand.exec(crdCmd);
+      ExecResult result = ExecCommand.exec(crdCmd);
       TestUtils.loginAndPushImageToOcir(image);
 
       // create ocir registry secret in the same ns as domain which is used while pulling the domain
