@@ -28,7 +28,7 @@ bash get${monitoringExporterVersion}.sh ${resourceExporterDir}/rest_webapp.yml
 
 cd ${monitoringExporterSrcDir}/config_coordinator
 docker build -t config_coordinator .
-if [ ${SHARED_CLUSTER} = "true" ]
+if [ ${SHARED_CLUSTER} = "true" ]; then
     docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
     docker tag config_coordinator:latest $REPO_REGISTRY/$REPO_USERNAME/config_coordinator:latest
     docker push $REPO_REGISTRY/$REPO_USERNAME/config_coordinator:latest
