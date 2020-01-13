@@ -1109,6 +1109,30 @@ public class ItMonitoringExporter extends BaseTest {
    */
   private static void installPrometheusGrafanaWebHookMySqlCoordinator() throws Exception {
     prometheusPort = "30000";
+    // for remote k8s cluster and domain in image case, push the webhook image to OCIR
+    if (BaseTest.SHARED_CLUSTER) {
+      String image = System.getenv("REPO_REGISTRY")
+          + "/weblogick8s/"
+          + domainNS2
+          + "-image:1.0";
+      crdCmd = " docker tag " + domainNS2
+          + "-image:1.0 " + image;
+
+      result = ExecCommand.exec(crdCmd);
+      TestUtils.loginAndPushImageToOcir(image);
+
+      // create ocir registry secret in the same ns as domain which is used while pulling the domain
+      // image
+
+      TestUtils.createDockerRegistrySecret(
+          "ocirsecret",
+          System.getenv("REPO_REGISTRY"),
+          System.getenv("REPO_USERNAME"),
+          System.getenv("REPO_PASSWORD"),
+          System.getenv("REPO_EMAIL"),
+          domainNS2);
+      replaceStringInFile(resourceExporterDir + "/domain1.yaml", domainNS2 + "-image:1.0", image);
+    }
 
     executeShelScript(
         resourceExporterDir,

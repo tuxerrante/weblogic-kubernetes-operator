@@ -43,7 +43,6 @@ for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kub
 export appname=prometheus
 for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kubectl delete ${p} -n monitoring --force --grace-period=0 --ignore-not-found; done
 
-promVersionArgs=9.7.4
 helm install --debug --wait --name prometheus --namespace monitoring --values  ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml stable/prometheus  --version ${promVersionArgs}
 
 helm list --all
@@ -60,12 +59,16 @@ helm install --wait --name grafana --namespace monitoring --values  ${monitoring
 
 cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
-docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
-docker tag webhook-log:1.0 phx.ocir.io/weblogick8s/webhook-log:1.0
-docker push phx.ocir.io/weblogick8s/webhook-log:1.0
-if [ ! "$?" = "0" ] ; then
-   echo "Error: Could not push the image to $REPO_REGISTRY".
-  #exit 1
+if [ ${SHARED_CLUSTER} = "true" ]
+    docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
+    docker tag webhook-log:1.0 $REPO_REGISTRY/$REPO_USERNAME/webhook-log:1.0
+    docker push $REPO_REGISTRY/$REPO_USERNAME/webhook-log:1.0
+    if [ ! "$?" = "0" ] ; then
+       echo "Error: Could not push the image to $REPO_REGISTRY".
+      #exit 1
+    fi
+    sed -i "s/webhook-log:1.0/$REPO_REGISTRY\/$REPO_USERNAME\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
+    sed -i "s/config_coordinator/$REPO_REGISTRY\/$REPO_USERNAME\/config_coordinator/g"  coordinator_${domainNS}.yaml
 fi
 echo 'docker list images for webhook'
 docker images | grep webhook
@@ -79,7 +82,7 @@ kubectl create secret docker-registry ocirsecret \
                     --docker-email=$REPO_EMAIL  \
                     --dry-run -o yaml | kubectl apply -f -
 
-sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
+#sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
 #sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  ${resourceExporterDir}/server.yaml
 cat ${resourceExporterDir}/server.yaml
 kubectl apply -f ${resourceExporterDir}/server.yaml --validate=false
@@ -95,7 +98,6 @@ kubectl get pods -n webhook
 cd ${resourceExporterDir}
 cp coordinator.yml coordinator_${domainNS}.yaml
 sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
-sed -i "s/config_coordinator/phx.ocir.io\/weblogick8s\/config_coordinator/g"  coordinator_${domainNS}.yaml
 #sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
 cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
