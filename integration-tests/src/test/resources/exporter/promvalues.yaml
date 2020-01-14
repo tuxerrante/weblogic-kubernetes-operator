@@ -24,7 +24,7 @@ server:
     existingClaim: pvc-prometheus
   service:
     type: NodePort
-    nodePort: 30000
+    nodePort: 30500
   securityContext:
     runAsNonRoot: false
     runAsUser: 0

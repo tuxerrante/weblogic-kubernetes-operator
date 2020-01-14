@@ -70,7 +70,7 @@ public class ItMonitoringExporter extends BaseTest {
   private static String monitoringExporterScriptDir = "";
   private static String exporterUrl = "";
   private static String configPath = "";
-  private static String prometheusPort = "30000";
+  private static String prometheusPort = "30500";
   private static String wlsUser = "";
   private static String wlsPassword = "";
   // "heap_free_current{name="managed-server1"}[15s]" search for results for last 15secs
@@ -1108,7 +1108,7 @@ public class ItMonitoringExporter extends BaseTest {
    * @throws Exception if could not run the command successfully to install Prometheus and Grafana
    */
   private static void installPrometheusGrafanaWebHookMySqlCoordinator() throws Exception {
-    prometheusPort = "30000";
+    prometheusPort = "30500";
     // for remote k8s cluster and domain in image case, push the webhook image to OCIR
     if (BaseTest.SHARED_CLUSTER) {
       String image = System.getenv("REPO_REGISTRY")
