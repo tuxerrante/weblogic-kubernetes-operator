@@ -14,7 +14,7 @@ alertmanager:
     existingClaim: pvc-alertmanager
   service:
     type: NodePort
-    nodePort: 32000
+    nodePort: 32001
   securityContext:
     runAsNonRoot: false
     runAsUser: 0

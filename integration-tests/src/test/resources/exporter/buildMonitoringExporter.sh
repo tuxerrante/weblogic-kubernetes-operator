@@ -30,8 +30,8 @@ cd ${monitoringExporterSrcDir}/config_coordinator
 docker build -t config_coordinator .
 if [ ${SHARED_CLUSTER} = "true" ]; then
     docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
-    docker tag config_coordinator:latest $REPO_REGISTRY/$REPO_USERNAME/config_coordinator:latest
-    docker push $REPO_REGISTRY/$REPO_USERNAME/config_coordinator:latest
+    docker tag config_coordinator:latest $REPO_REGISTRY/weblogick8s/config_coordinator:latest
+    docker push $REPO_REGISTRY/weblogick8s/config_coordinator:latest
     if [ ! "$?" = "0" ] ; then
        echo "Error: Could not push the image to $REPO_REGISTRY".
       #exit 1
