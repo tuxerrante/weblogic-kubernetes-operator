@@ -70,7 +70,7 @@ public class ItMonitoringExporter extends BaseTest {
   private static String monitoringExporterScriptDir = "";
   private static String exporterUrl = "";
   private static String configPath = "";
-  private static String prometheusPort = "30000";
+  private static String prometheusPort = "30500";
   private static String wlsUser = "";
   private static String wlsPassword = "";
   // "heap_free_current{name="managed-server1"}[15s]" search for results for last 15secs
