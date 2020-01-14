@@ -1108,7 +1108,7 @@ public class ItMonitoringExporter extends BaseTest {
    * @throws Exception if could not run the command successfully to install Prometheus and Grafana
    */
   private static void installPrometheusGrafanaWebHookMySqlCoordinator() throws Exception {
-    prometheusPort = "30000";
+    prometheusPort = "30500";
     // for remote k8s cluster and domain in image case, push the webhook image to OCIR
     if (BaseTest.SHARED_CLUSTER) {
       String image = System.getenv("REPO_REGISTRY")
