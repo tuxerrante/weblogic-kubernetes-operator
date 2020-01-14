@@ -104,5 +104,7 @@ kubectl get pods -n webhook
 cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl get pods -n ${domainNS}
+kubectl get pods -n monitoring
+kubectl get pods -n webhook
 
 echo "Run the script [createPromGrafanaMySqlCoordWebhook.sh] ..."
