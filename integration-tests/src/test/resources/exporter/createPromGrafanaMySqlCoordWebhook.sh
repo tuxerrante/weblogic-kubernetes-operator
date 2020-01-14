@@ -79,7 +79,7 @@ if [ ${SHARED_CLUSTER} = "true" ] ; then
       #exit 1
     fi
     sed -i "s/webhook-log:1.0/$REPO_REGISTRY\/weblogick8sE\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
-    sed -i "s/config_coordinator/$REPO_REGISTRY\/weblogick8s\/config_coordinator/g"  coordinator_${domainNS}.yaml
+    sed -i "s/config_coordinator/$REPO_REGISTRY\/weblogick8s\/config_coordinator/g"  ${resourceExporterDir}/coordinator_${domainNS}.yaml
 fi
 
 cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
