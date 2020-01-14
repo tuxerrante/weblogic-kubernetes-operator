@@ -1169,14 +1169,16 @@ public class ItMonitoringExporter extends BaseTest {
 
     podName = getPodName("app=grafana", "monitoring");
     TestUtils.checkPodReady(podName, "monitoring");
-
-
+    String myhost = System.getProperty("HOSTNAME");
+    if(BaseTest.SHARED_CLUSTER) {
+      myhost = System.getProperty("K8S_NODEPORT_HOST");
+    }
     LoggerHelper.getLocal().log(Level.INFO, "installing grafana dashboard");
     crdCmd =
         " cd "
             + monitoringExporterEndToEndDir
             + " && curl -v -H 'Content-Type: application/json' -H \"Content-Type: application/json\""
-            + "  -X POST http://admin:12345678@$HOSTNAME:31000/api/datasources/"
+            + "  -X POST http://admin:12345678@" + myhost + ":31000/api/datasources/"
             + "  --data-binary @grafana/datasource.json";
     TestUtils.exec(crdCmd);
 
@@ -1184,7 +1186,7 @@ public class ItMonitoringExporter extends BaseTest {
         " cd "
             + monitoringExporterEndToEndDir
             + " && curl -v -H 'Content-Type: application/json' -H \"Content-Type: application/json\""
-            + "  -X POST http://admin:12345678@$HOSTNAME:31000/api/dashboards/db/"
+            + "  -X POST http://admin:12345678@" + myhost + ":31000/api/dashboards/db/"
             + "  --data-binary @grafana/dashboard.json";
     TestUtils.exec(crdCmd);
     crdCmd = " cd "
