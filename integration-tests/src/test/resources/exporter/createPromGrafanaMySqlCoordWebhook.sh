@@ -62,6 +62,12 @@ kubectl --namespace monitoring create secret generic grafana-secret --from-liter
 kubectl apply -f ${monitoringExporterEndToEndDir}/grafana/persistence.yaml
 helm install --wait --name grafana --namespace monitoring --values  ${monitoringExporterEndToEndDir}/grafana/values.yaml stable/grafana --version ${grafanaVersionArgs}
 
+#create coordinator
+cd ${resourceExporterDir}
+cp coordinator.yml coordinator_${domainNS}.yaml
+sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
+#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
+
 cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
 if [ ${SHARED_CLUSTER} = "true" ] ; then
@@ -75,6 +81,10 @@ if [ ${SHARED_CLUSTER} = "true" ] ; then
     sed -i "s/webhook-log:1.0/$REPO_REGISTRY\/weblogick8sE\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
     sed -i "s/config_coordinator/$REPO_REGISTRY\/weblogick8s\/config_coordinator/g"  coordinator_${domainNS}.yaml
 fi
+
+cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
+kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
+
 echo 'docker list images for webhook'
 docker images | grep webhook
 kubectl create ns webhook
@@ -98,14 +108,6 @@ kubectl describe pods ${POD_NAME} -n webhook
 kubectl logs ${POD_NAME} -n webhook
 echo "Getting info about webhook"
 kubectl get pods -n webhook
-
-#create coordinator
-cd ${resourceExporterDir}
-cp coordinator.yml coordinator_${domainNS}.yaml
-sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
-#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
-cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
-kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl get pods -n ${domainNS}
 
 echo "Run the script [createPromGrafanaMySqlCoordWebhook.sh] ..."
