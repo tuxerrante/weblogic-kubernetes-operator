@@ -42,7 +42,12 @@ for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kub
 
 export appname=prometheus
 for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kubectl delete ${p} -n monitoring --force --grace-period=0 --ignore-not-found; done
-
+cmd1=`helm list | grep prometheus`
+echo $cmd1
+if [ "${cmd1}" == "prometheus" ]; then
+     echo "found prometheus running, will delete "
+     helm delete prometheus --purge
+fi
 helm install --debug --wait --name prometheus --namespace monitoring --values  ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml stable/prometheus  --version ${promVersionArgs}
 
 helm list --all
