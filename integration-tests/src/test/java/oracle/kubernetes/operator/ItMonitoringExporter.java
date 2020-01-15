@@ -1029,10 +1029,8 @@ public class ItMonitoringExporter extends BaseTest {
           + "/weblogick8s/"
           + domainNS2
           + "-image:1.0";
-      crdCmd = " docker tag " + domainNS2
-          + "-image:1.0 " + image;
-
-      result = ExecCommand.exec(crdCmd);
+      String oldimage = domainNS2 + "-image:1.0 ";
+      loginAndTagImage(oldimage, image);
       TestUtils.loginAndPushImageToOcir(image);
 
       // create ocir registry secret in the same ns as domain which is used while pulling the domain
@@ -1100,6 +1098,29 @@ public class ItMonitoringExporter extends BaseTest {
             + "@" + domainNS2 + "-managed-server-2:8001/wls-exporter/metrics";
     result = TestUtils.exec(crdCmd);
     assertTrue((result.stdout().contains("wls_servlet_execution_time_average")));
+  }
+
+  private static ExecResult loginAndTagImage(String oldImageName, String newImageName) throws Exception {
+    String dockerLoginAndTagCmd =
+        "docker login "
+            + System.getenv("REPO_REGISTRY")
+            + " -u "
+            + System.getenv("REPO_USERNAME")
+            + " -p \""
+            + System.getenv("REPO_PASSWORD")
+            + "\" && docker tag "
+            + oldImageName
+            + " "
+            + newImageName;
+    ExecResult result = TestUtils.exec(dockerLoginAndTagCmd);
+    LoggerHelper.getLocal().log(Level.INFO,
+        "cmd "
+            + dockerLoginAndTagCmd
+            + "\n result "
+            + result.stdout()
+            + "\n err "
+            + result.stderr());
+    return result;
   }
 
   /**
