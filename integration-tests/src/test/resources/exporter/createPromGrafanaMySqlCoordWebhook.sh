@@ -42,12 +42,7 @@ for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kub
 
 export appname=prometheus
 for p in `kubectl get po -l app=$appname -o name -n monitoring `;do echo $p; kubectl delete ${p} -n monitoring --force --grace-period=0 --ignore-not-found; done
-cmd1=`helm list | grep prometheus`
-echo $cmd1
-if [ "${cmd1}" == "prometheus" ]; then
-     echo "found prometheus running, will delete "
-     helm delete prometheus --purge
-fi
+
 helm install --debug --wait --name prometheus --namespace monitoring --values  ${monitoringExporterEndToEndDir}/prometheus/promvalues.yaml stable/prometheus  --version ${promVersionArgs}
 
 helm list --all
@@ -62,16 +57,15 @@ kubectl --namespace monitoring create secret generic grafana-secret --from-liter
 kubectl apply -f ${monitoringExporterEndToEndDir}/grafana/persistence.yaml
 helm install --wait --name grafana --namespace monitoring --values  ${monitoringExporterEndToEndDir}/grafana/values.yaml stable/grafana --version ${grafanaVersionArgs}
 
-#create coordinator
 cd ${resourceExporterDir}
 cp coordinator.yml coordinator_${domainNS}.yaml
 sed -i "s/default/$domainNS/g"  coordinator_${domainNS}.yaml
-#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
 
 cd ${monitoringExporterEndToEndDir}
 docker build ./webhook -t webhook-log:1.0;
-if [ ${SHARED_CLUSTER} = "true" ] ; then
+if [ ${SHARED_CLUSTER} = "true" ]; then
     docker login $REPO_REGISTRY -u $REPO_USERNAME -p $REPO_PASSWORD
+    echo "tag image " $REPO_REGISTRY/$REPO_USERNAME/webhook-log:1.0
     docker tag webhook-log:1.0 $REPO_REGISTRY/weblogick8s/webhook-log:1.0
     docker push $REPO_REGISTRY/weblogick8s/webhook-log:1.0
     if [ ! "$?" = "0" ] ; then
@@ -81,16 +75,12 @@ if [ ${SHARED_CLUSTER} = "true" ] ; then
     sed -i "s/webhook-log:1.0/$REPO_REGISTRY\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
     sed -i "s/config_coordinator/$REPO_REGISTRY\/weblogick8s\/config_coordinator/g"  ${resourceExporterDir}/coordinator_${domainNS}.yaml
 fi
-
-cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
-kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
-
 echo 'docker list images for webhook'
 docker images | grep webhook
 kubectl create ns webhook
 #sed -i "s/Never/Always/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
 #sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
-kubectl create secret docker-registry ocirsecret \
+kubectl create secret docker-registry ocirsecret -n webhook \
                     --docker-server=$REPO_REGISTRY \
                     --docker-username=$REPO_USERNAME \
                     --docker-password=$REPO_PASSWORD \
@@ -108,6 +98,19 @@ kubectl describe pods ${POD_NAME} -n webhook
 kubectl logs ${POD_NAME} -n webhook
 echo "Getting info about webhook"
 kubectl get pods -n webhook
+
+#create coordinator
+kubectl create secret docker-registry ocirsecret -n ${domainNS} \
+                    --docker-server=$REPO_REGISTRY \
+                    --docker-username=$REPO_USERNAME \
+                    --docker-password=$REPO_PASSWORD \
+                    --docker-email=$REPO_EMAIL  \
+                    --dry-run -o yaml | kubectl apply -f -
+#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
+cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
+kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl get pods -n ${domainNS}
+kubectl get pods -n monitoring
+kubectl get pods -n webhook
 
 echo "Run the script [createPromGrafanaMySqlCoordWebhook.sh] ..."
