@@ -1169,7 +1169,8 @@ public class ItMonitoringExporter extends BaseTest {
 
     podName = getPodName("app=grafana", "monitoring");
     TestUtils.checkPodReady(podName, "monitoring");
-    String myhost = TestUtils.getHostName();
+    String myhost = domain.getHostNameForCurl();
+    LoggerHelper.getLocal().log(Level.INFO, "installing grafana dashboard for host " + myhost);
     LoggerHelper.getLocal().log(Level.INFO, "installing grafana dashboard");
     crdCmd =
         " cd "
