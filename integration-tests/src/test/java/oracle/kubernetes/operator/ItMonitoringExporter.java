@@ -1000,7 +1000,7 @@ public class ItMonitoringExporter extends BaseTest {
   private static void createWlsImageAndDeploy() throws Exception {
     LoggerHelper.getLocal().log(Level.INFO, " Starting to create WLS Image");
     String image;
-    String oldimage;
+    String oldimage = domainNS2 + "-image:1.0";
 
     String command =
         "cd "
@@ -1031,7 +1031,6 @@ public class ItMonitoringExporter extends BaseTest {
             + "/weblogick8s/"
             + domainNS2
             + "-image:1.0";
-      oldimage = domainNS2 + "-image:1.0 ";
       loginAndTagImage(oldimage, image);
 
       // create ocir registry secret in the same ns as domain which is used while pulling the domain
