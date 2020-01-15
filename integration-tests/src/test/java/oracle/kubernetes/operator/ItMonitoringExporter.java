@@ -1170,10 +1170,7 @@ public class ItMonitoringExporter extends BaseTest {
     podName = getPodName("app=grafana", "monitoring");
     TestUtils.checkPodReady(podName, "monitoring");
 
-    String myhost = System.getProperty("HOSTNAME");
-    if (BaseTest.SHARED_CLUSTER) {
-      myhost = System.getProperty("K8S_NODEPORT_HOST");
-    }
+    String myhost = TestUtils.getHostName();
     LoggerHelper.getLocal().log(Level.INFO, "installing grafana dashboard");
     crdCmd =
         " cd "
