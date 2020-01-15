@@ -999,6 +999,8 @@ public class ItMonitoringExporter extends BaseTest {
    */
   private static void createWlsImageAndDeploy() throws Exception {
     LoggerHelper.getLocal().log(Level.INFO, " Starting to create WLS Image");
+    String image;
+    String oldimage;
 
     String command =
         "cd "
@@ -1025,25 +1027,24 @@ public class ItMonitoringExporter extends BaseTest {
         "30701", String.valueOf(30800 + getNewSuffixCount()));
     // for remote k8s cluster and domain in image case, push the domain image to OCIR
     if (BaseTest.SHARED_CLUSTER) {
-      String image = System.getenv("REPO_REGISTRY")
-          + "/weblogick8s/"
-          + domainNS2
-          + "-image:1.0";
-      String oldimage = domainNS2 + "-image:1.0 ";
+      image = System.getenv("REPO_REGISTRY")
+            + "/weblogick8s/"
+            + domainNS2
+            + "-image:1.0";
+      oldimage = domainNS2 + "-image:1.0 ";
       loginAndTagImage(oldimage, image);
-      TestUtils.loginAndPushImageToOcir(image);
 
       // create ocir registry secret in the same ns as domain which is used while pulling the domain
       // image
-
       TestUtils.createDockerRegistrySecret(
-          "ocirsecret",
-          System.getenv("REPO_REGISTRY"),
-          System.getenv("REPO_USERNAME"),
-          System.getenv("REPO_PASSWORD"),
-          System.getenv("REPO_EMAIL"),
-          domainNS2);
-      replaceStringInFile(resourceExporterDir + "/domain1.yaml", domainNS2 + "-image:1.0", image);
+            "ocirsecret",
+            System.getenv("REPO_REGISTRY"),
+            System.getenv("REPO_USERNAME"),
+            System.getenv("REPO_PASSWORD"),
+            System.getenv("REPO_EMAIL"),
+            domainNS2);
+      TestUtils.loginAndPushImageToOcir(image);
+      replaceStringInFile(resourceExporterDir + "/domain1.yaml", oldimage, image);
     }
 
     LoggerHelper.getLocal().log(Level.INFO, " Starting to create secret");
@@ -1054,16 +1055,6 @@ public class ItMonitoringExporter extends BaseTest {
             + "  --from-literal=password="
             + wlsPassword;
     TestUtils.exec(command);
-    //update with current WDT version
-    /*
-    replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "v3", "v6");
-    replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "domain1", domainNS2);
-    replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "default", domainNS2);
-    replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml",
-        "30703", String.valueOf(31000 + getNewSuffixCount()));
-    replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml",
-        "30701", String.valueOf(30800 + getNewSuffixCount()));
-    */
 
     // apply new domain yaml and verify pod restart
     crdCmd =
@@ -1130,30 +1121,6 @@ public class ItMonitoringExporter extends BaseTest {
    */
   private static void installPrometheusGrafanaWebHookMySqlCoordinator() throws Exception {
     prometheusPort = "30500";
-    // for remote k8s cluster and domain in image case, push the webhook image to OCIR
-    if (BaseTest.SHARED_CLUSTER) {
-      String image = System.getenv("REPO_REGISTRY")
-          + "/weblogick8s/"
-          + domainNS2
-          + "-image:1.0";
-      String crdCmd = " docker tag " + domainNS2
-          + "-image:1.0 " + image;
-
-      ExecResult result = ExecCommand.exec(crdCmd);
-      TestUtils.loginAndPushImageToOcir(image);
-
-      // create ocir registry secret in the same ns as domain which is used while pulling the domain
-      // image
-
-      TestUtils.createDockerRegistrySecret(
-          "ocirsecret",
-          System.getenv("REPO_REGISTRY"),
-          System.getenv("REPO_USERNAME"),
-          System.getenv("REPO_PASSWORD"),
-          System.getenv("REPO_EMAIL"),
-          domainNS2);
-      replaceStringInFile(resourceExporterDir + "/domain1.yaml", domainNS2 + "-image:1.0", image);
-    }
 
     executeShelScript(
         resourceExporterDir,
