@@ -78,8 +78,6 @@ fi
 echo 'docker list images for webhook'
 docker images | grep webhook
 kubectl create ns webhook
-#sed -i "s/Never/Always/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
-#sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${monitoringExporterEndToEndDir}/webhook/server.yaml
 kubectl create secret docker-registry ocirsecret -n webhook \
                     --docker-server=$REPO_REGISTRY \
                     --docker-username=$REPO_USERNAME \
@@ -87,8 +85,6 @@ kubectl create secret docker-registry ocirsecret -n webhook \
                     --docker-email=$REPO_EMAIL  \
                     --dry-run -o yaml | kubectl apply -f -
 
-#sed -i "s/webhook-log:1.0/phx.ocir.io\/weblogick8s\/webhook-log:1.0/g"  ${resourceExporterDir}/server.yaml
-#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  ${resourceExporterDir}/server.yaml
 cat ${resourceExporterDir}/server.yaml
 kubectl apply -f ${resourceExporterDir}/server.yaml --validate=false
 kubectl get pods -n webhook
@@ -106,7 +102,7 @@ kubectl create secret docker-registry ocirsecret -n ${domainNS} \
                     --docker-password=$REPO_PASSWORD \
                     --docker-email=$REPO_EMAIL  \
                     --dry-run -o yaml | kubectl apply -f -
-#sed -i "s/docker-store/${IMAGE_PULL_SECRET_OPERATOR}/g"  coordinator_${domainNS}.yaml
+
 cat ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl apply -f ${resourceExporterDir}/coordinator_${domainNS}.yaml
 kubectl get pods -n ${domainNS}

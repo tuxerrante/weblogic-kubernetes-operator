@@ -799,7 +799,6 @@ public class ItMonitoringExporter extends BaseTest {
       throw ex;
     } finally {
       String crdCmd =
-          //" kubectl delete -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
           " kubectl delete -f " + resourceExporterDir + "/domain1.yaml";
       ExecCommand.exec(crdCmd);
       crdCmd = "kubectl delete secret " + domainNS2 + "-weblogic-credentials";
@@ -814,11 +813,10 @@ public class ItMonitoringExporter extends BaseTest {
     LoggerHelper.getLocal().log(Level.INFO, "Fire Alert by changing replca count");
     replaceStringInFile(
         resourceExporterDir + "/domain1.yaml", "replicas: 2", "replicas: 1");
-    //monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml", "replicas: 2", "replicas: 1");
+
     // apply new domain yaml and verify pod restart
     String crdCmd =
         " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
-    //" kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
     TestUtils.exec(crdCmd);
 
     TestUtils.checkPodReady(domainNS2 + "-admin-server", domainNS2);
@@ -1058,7 +1056,6 @@ public class ItMonitoringExporter extends BaseTest {
     // apply new domain yaml and verify pod restart
     crdCmd =
         " kubectl apply -f " + resourceExporterDir + "/domain1.yaml";
-    //" kubectl apply -f " + monitoringExporterEndToEndDir + "/demo-domains/domain1.yaml";
     TestUtils.exec(crdCmd);
 
     TestUtils.checkPodReady(domainNS2 + "-admin-server", domainNS2);
@@ -1129,7 +1126,7 @@ public class ItMonitoringExporter extends BaseTest {
             + GRAFANA_CHART_VERSION + " " + domainNS1 + " " + domainNS2);
 
     String webhookPod = getPodName("app=webhook", "webhook");
-    //TestUtils.checkPodReady(webhookPod, "webhook");
+    TestUtils.checkPodReady(webhookPod, "webhook");
 
     //update with current WDT version
     replaceStringInFile(monitoringExporterEndToEndDir + "/demo-domains/domainBuilder/build.sh",
@@ -1142,7 +1139,7 @@ public class ItMonitoringExporter extends BaseTest {
 
   static void checkPromGrafana(String searchKey, String expectedVal) throws Exception {
     String podName = getPodName("app=prometheus", "monitoring");
-    //TestUtils.checkPodReady(podName, "monitoring", "2/2");
+    TestUtils.checkPodReady(podName, "monitoring", "2/2");
 
     String crdCmd = "kubectl -n monitoring get pods -l app=prometheus";
     ExecResult resultStatus = ExecCommand.exec(crdCmd);
