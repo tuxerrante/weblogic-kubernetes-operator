@@ -1191,7 +1191,7 @@ public class ItMonitoringExporter extends BaseTest {
         + monitoringExporterEndToEndDir
         + " && "
         + "curl -v  -H 'Content-Type: application/json' "
-        + " -X GET http://admin:12345678@$HOSTNAME:31000/api/dashboards/db/weblogic-server-dashboard";
+        + " -X GET http://admin:12345678@" + myhost + ":31000/api/dashboards/db/weblogic-server-dashboard";
     ExecResult result = ExecCommand.exec(crdCmd);
     assertTrue(result.stdout().contains("wls_jvm_uptime"));
     assertTrue(
