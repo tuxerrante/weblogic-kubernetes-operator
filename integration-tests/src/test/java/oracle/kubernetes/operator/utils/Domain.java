@@ -1550,7 +1550,7 @@ public class Domain {
       String responseCode = result.stdout().trim();
       if (result.exitValue() != 0 || !responseCode.equals("200")) {
         LoggerHelper.getLocal().log(Level.INFO,
-            "callWebApp did not return 200 status code, got "
+            curlCmd + "callWebApp did not return 200 status code, got "
                 + responseCode
                 + ", iteration "
                 + i
