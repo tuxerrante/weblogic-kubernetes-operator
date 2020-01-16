@@ -118,7 +118,7 @@ public class ItJrfPvWlst extends BaseTest {
       
       JrfDomain jrfdomain = null;
       boolean testCompletedSuccessfully = false;
-      setWaitTimePod(10);
+      setWaitTimePod(20);
 
       try {
         // create JRF domain
