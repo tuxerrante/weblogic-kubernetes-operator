@@ -177,12 +177,21 @@ public class DomainStatusUpdater {
       JsonPatchBuilder builder = Json.createPatchBuilder();
       newStatus.createPatchFrom(builder, context.getStatus());
       LOGGER.info(MessageKeys.DOMAIN_STATUS, context.getDomainUid(), newStatus);
+      debugLog(context, newStatus);
 
       return new CallBuilder().patchDomainAsync(
             context.getDomainName(),
             context.getNamespace(),
             new V1Patch(builder.build().toString()),
             createResponseStep());
+    }
+
+    private void debugLog(DomainStatusUpdaterContext context, DomainStatus newStatus) {
+      JsonPatchBuilder builder = Json.createPatchBuilder();
+      newStatus.createPatchFrom(builder, context.getStatus());
+      LOGGER.finer("Patching status", "old context " + context.getStatus(),
+            "new context " + newStatus,
+            "patch " + builder.build().toString());
     }
 
     private ResponseStep<Domain> createResponseStep() {
