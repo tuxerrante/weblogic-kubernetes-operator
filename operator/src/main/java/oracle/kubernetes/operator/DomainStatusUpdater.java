@@ -189,7 +189,7 @@ public class DomainStatusUpdater {
     private void debugLog(DomainStatusUpdaterContext context, DomainStatus newStatus) {
       JsonPatchBuilder builder = Json.createPatchBuilder();
       newStatus.createPatchFrom(builder, context.getStatus());
-      LOGGER.finer("Patching status", "old context " + context.getStatus(),
+      LOGGER.finer("Patching status: " + "old context " + context.getStatus(),
             "new context " + newStatus,
             "patch " + builder.build().toString());
     }
