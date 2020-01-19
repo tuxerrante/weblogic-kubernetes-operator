@@ -210,7 +210,7 @@ public class DomainStatusUpdater {
       }
 
       private NextAction logAndReportFailure(Packet packet, CallResponse<Domain> callResponse) {
-        LOGGER.fine("Failed to patch status\n" + oldStatus + "\nto\n" + newStatus + "\nwith patch\n" + patch);
+        LOGGER.warning("Failed to patch status\n" + oldStatus + "\nto\n" + newStatus + "\nwith patch\n" + patch);
         return onFailure(null, packet, callResponse);
       }
     }
