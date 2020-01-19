@@ -177,27 +177,43 @@ public class DomainStatusUpdater {
       JsonPatchBuilder builder = Json.createPatchBuilder();
       newStatus.createPatchFrom(builder, context.getStatus());
       LOGGER.info(MessageKeys.DOMAIN_STATUS, context.getDomainUid(), newStatus);
-      debugLog(context, newStatus);
 
+      String patchString = builder.build().toString();
       return new CallBuilder().patchDomainAsync(
             context.getDomainName(),
             context.getNamespace(),
-            new V1Patch(builder.build().toString()),
-            createResponseStep());
+            new V1Patch(patchString),
+            createResponseStep(context.getStatus(), newStatus, patchString));
     }
 
-    private void debugLog(DomainStatusUpdaterContext context, DomainStatus newStatus) {
-      JsonPatchBuilder builder = Json.createPatchBuilder();
-      newStatus.createPatchFrom(builder, context.getStatus());
-      LOGGER.finer("Patching status: " + "old context " + context.getStatus(),
-            "new context " + newStatus,
-            "patch " + builder.build().toString());
+    private ResponseStep<Domain> createResponseStep(DomainStatus oldStatus, DomainStatus newStatus, String patch) {
+      return new PatchResponseStep(getNext(), oldStatus, newStatus, patch);
     }
 
-    private ResponseStep<Domain> createResponseStep() {
-      return new DefaultResponseStep<>(getNext());
-    }
+    private static class PatchResponseStep extends DefaultResponseStep<Domain> {
+      private final DomainStatus oldStatus;
+      private final DomainStatus newStatus;
+      private final String patch;
 
+      public PatchResponseStep(Step nextStep, DomainStatus oldStatus, DomainStatus newStatus, String patch) {
+        super(nextStep);
+        this.oldStatus = oldStatus;
+        this.newStatus = newStatus;
+        this.patch = patch;
+      }
+
+      @Override
+      public NextAction onFailure(Packet packet, CallResponse<Domain> callResponse) {
+        return callResponse.getStatusCode() == CallBuilder.NOT_FOUND
+            ? onSuccess(packet, callResponse)
+            : logAndReportFailure(packet, callResponse);
+      }
+
+      private NextAction logAndReportFailure(Packet packet, CallResponse<Domain> callResponse) {
+        LOGGER.fine("Failed to patch status\n" + oldStatus + "\nto\n" + newStatus + "\nwith patch\n" + patch);
+        return onFailure(null, packet, callResponse);
+      }
+    }
   }
 
   static class DomainStatusUpdaterContext {
