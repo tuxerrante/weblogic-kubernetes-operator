@@ -19,6 +19,8 @@ import javax.json.JsonPatchBuilder;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodSpec;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.FailureStatusSource;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
@@ -45,6 +47,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerHealth;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
@@ -160,8 +163,7 @@ public class DomainStatusUpdater {
       return new DomainStatusUpdaterContext(packet, this);
     }
 
-    void modifyStatus(DomainStatus domainStatus) {
-    }
+    abstract void modifyStatus(DomainStatus domainStatus);
 
     @Override
     public NextAction apply(Packet packet) {
@@ -178,41 +180,53 @@ public class DomainStatusUpdater {
       newStatus.createPatchFrom(builder, context.getStatus());
       LOGGER.info(MessageKeys.DOMAIN_STATUS, context.getDomainUid(), newStatus);
 
-      String patchString = builder.build().toString();
       return new CallBuilder().patchDomainAsync(
             context.getDomainName(),
             context.getNamespace(),
-            new V1Patch(patchString),
-            createResponseStep(context.getStatus(), newStatus, patchString));
+            new V1Patch(builder.build().toString()),
+            createResponseStep(context, getNext()));
     }
 
-    private ResponseStep<Domain> createResponseStep(DomainStatus oldStatus, DomainStatus newStatus, String patch) {
-      return new PatchResponseStep(getNext(), oldStatus, newStatus, patch);
+    private ResponseStep<Domain> createResponseStep(DomainStatusUpdaterContext context, Step next) {
+      return new PatchResponseStep(this, context, next);
+    }
+  }
+
+  static class PatchResponseStep extends DefaultResponseStep<Domain> {
+    private DomainStatusUpdaterStep updaterStep;
+    private final DomainStatusUpdaterContext context;
+
+    public PatchResponseStep(DomainStatusUpdaterStep updaterStep, DomainStatusUpdaterContext context, Step nextStep) {
+      super(nextStep);
+      this.updaterStep = updaterStep;
+      this.context = context;
     }
 
-    private static class PatchResponseStep extends DefaultResponseStep<Domain> {
-      private final DomainStatus oldStatus;
-      private final DomainStatus newStatus;
-      private final String patch;
+    @Override
+    public NextAction onFailure(Packet packet, CallResponse<Domain> callResponse) {
+      if (!isPatchFailure(callResponse)) return super.onFailure(packet, callResponse);
 
-      public PatchResponseStep(Step nextStep, DomainStatus oldStatus, DomainStatus newStatus, String patch) {
-        super(nextStep);
-        this.oldStatus = oldStatus;
-        this.newStatus = newStatus;
-        this.patch = patch;
-      }
+      return doNext(createRetry(context, getNext()), packet);
+    }
 
-      @Override
-      public NextAction onFailure(Packet packet, CallResponse<Domain> callResponse) {
-        return callResponse.getStatusCode() == CallBuilder.NOT_FOUND
-            ? onSuccess(packet, callResponse)
-            : logAndReportFailure(packet, callResponse);
-      }
+    public Step createRetry(DomainStatusUpdaterContext context, Step next) {
+      return Step.chain(createDomainRefreshStep(context), updaterStep, next);
+    }
 
-      private NextAction logAndReportFailure(Packet packet, CallResponse<Domain> callResponse) {
-        LOGGER.warning("Failed to patch status\n" + oldStatus + "\nto\n" + newStatus + "\nwith patch\n" + patch);
-        return onFailure(null, packet, callResponse);
-      }
+    private boolean isPatchFailure(CallResponse<Domain> callResponse) {
+      return callResponse.getStatusCode() == HTTP_INTERNAL_ERROR;
+    }
+
+    private Step createDomainRefreshStep(DomainStatusUpdaterContext context) {
+      return new CallBuilder().readDomainAsync(context.getDomainName(), context.getNamespace(), new DomainUpdateStep());
+    }
+  }
+
+  static class DomainUpdateStep extends ResponseStep<Domain> {
+    @Override
+    public NextAction onSuccess(Packet packet, CallResponse<Domain> callResponse) {
+      packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+      return doNext(packet);
     }
   }
 
@@ -285,6 +299,10 @@ public class DomainStatusUpdater {
       return new StatusUpdateContext(packet, this);
     }
 
+    @Override
+    void modifyStatus(DomainStatus domainStatus) { // no-op; modification happens in the context itself.
+    }
+
     static class StatusUpdateContext extends DomainStatusUpdaterContext {
       private final WlsDomainConfig config;
       private final Map<String, String> serverState;
@@ -300,7 +318,7 @@ public class DomainStatusUpdater {
       @Override
       void modifyStatus(DomainStatus status) {
         if (getDomain() == null) return;
-        
+
         if (getDomainConfig().isPresent()) {
           status.setServers(new ArrayList<>(getServerStatuses().values()));
           status.setClusters(new ArrayList<>(getClusterStatuses().values()));
@@ -418,7 +436,8 @@ public class DomainStatusUpdater {
 
       private String getNodeName(String serverName) {
         return Optional.ofNullable(getInfo().getServerPod(serverName))
-            .map(p -> p.getSpec().getNodeName())
+            .map(V1Pod::getSpec)
+            .map(V1PodSpec::getNodeName)
             .orElse(null);
       }
 
@@ -430,20 +449,23 @@ public class DomainStatusUpdater {
 
       private String getClusterNameFromPod(String serverName) {
         return Optional.ofNullable(getInfo().getServerPod(serverName))
-            .map(p -> p.getMetadata().getLabels().get(CLUSTERNAME_LABEL))
+            .map(V1Pod::getMetadata)
+            .map(V1ObjectMeta::getLabels)
+            .map(l -> l.get(CLUSTERNAME_LABEL))
             .orElse(null);
       }
 
       private Collection<String> getServerNames() {
         Set<String> result = new HashSet<>();
-        getDomainConfig().ifPresent(config -> {
-          result.addAll(config.getServerConfigs().keySet());
-          for (WlsClusterConfig cluster : config.getConfiguredClusters()) {
-            Optional.ofNullable(cluster.getDynamicServersConfig())
-                .ifPresent(dynamicConfig -> Optional.ofNullable(dynamicConfig.getServerConfigs())
-                    .ifPresent(servers -> servers.forEach(item -> result.add(item.getName()))));
-          }
-        });
+        getDomainConfig()
+              .ifPresent(config -> {
+                result.addAll(config.getServerConfigs().keySet());
+                for (WlsClusterConfig cluster : config.getConfiguredClusters()) {
+                  Optional.ofNullable(cluster.getDynamicServersConfig())
+                        .flatMap(dynamicConfig -> Optional.ofNullable(dynamicConfig.getServerConfigs()))
+                        .ifPresent(servers -> servers.forEach(item -> result.add(item.getName())));
+                }
+              });
         return result;
       }
 
