@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import oracle.kubernetes.operator.utils.DbUtils;
 import oracle.kubernetes.operator.utils.DomainCrd;
 import oracle.kubernetes.operator.utils.ExecResult;
-import oracle.kubernetes.operator.utils.JrfDomain;
+import oracle.kubernetes.operator.utils.FmwDomain;
 import oracle.kubernetes.operator.utils.LoggerHelper;
 import oracle.kubernetes.operator.utils.Operator;
 import oracle.kubernetes.operator.utils.TestUtils;
@@ -119,7 +119,7 @@ public class ItJrfPvWlst extends BaseTest {
       LoggerHelper.getLocal().log(Level.INFO,
           "Creating Operator & waiting for the script to complete execution");
       
-      JrfDomain jrfdomain = null;
+      FmwDomain jrfdomain = null;
       boolean testCompletedSuccessfully = false;
 
       try {
@@ -136,7 +136,7 @@ public class ItJrfPvWlst extends BaseTest {
         LoggerHelper.getLocal().log(Level.INFO,
             "Creating and verifying the domain creation with domainUid: " + domainUid);
 
-        jrfdomain = new JrfDomain(domainMap);
+        jrfdomain = new FmwDomain(domainMap);
         jrfdomain.verifyDomainCreated();
         
         // basic test cases
