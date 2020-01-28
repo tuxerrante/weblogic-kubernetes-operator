@@ -132,6 +132,7 @@ public class ItJrfPvWlst extends BaseTest {
         domainMap.put("managedServerNameBase", "infraserver");
         domainMap.put("rcuSchemaPrefix", "jrfdomain");
         domainMap.put("rcuDatabaseURL", "oracle-db.default.svc.cluster.local:1521/devpdb.k8s");
+        domainMap.put("fmwType", "jrf");
         domainUid = (String) domainMap.get("domainUID");
         LoggerHelper.getLocal().log(Level.INFO,
             "Creating and verifying the domain creation with domainUid: " + domainUid);

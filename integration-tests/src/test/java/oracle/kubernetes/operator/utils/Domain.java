@@ -1673,9 +1673,19 @@ public class Domain {
       sampleDomainInputsFile =
           "/samples/scripts/create-weblogic-domain/domain-home-in-image/create-domain-inputs.yaml";
     } else if (domainMap.containsKey("rcuDatabaseURL")) {
-      sampleDomainInputsFile =
+      if (((String)domainMap.get("fmwType")).equalsIgnoreCase("jrf")) {
+        LoggerHelper.getLocal().log(Level.INFO,
+            "This is JRF domain-home-on-pv domain ");
+        sampleDomainInputsFile =
           "/samples/scripts/create-fmw-infrastructure-domain/"
               + "domain-home-on-pv/create-domain-inputs.yaml";
+      } else if (((String)domainMap.get("fmwType")).equalsIgnoreCase("soa")) {
+        LoggerHelper.getLocal().log(Level.INFO,
+            "This is SOA domain-home-on-pv domain ");
+        sampleDomainInputsFile =
+            "/samples/scripts/create-soa-domain/"
+                + "domain-home-on-pv/create-domain-inputs.yaml";
+      }
     }
     LoggerHelper.getLocal().log(
         Level.INFO, "For this domain sampleDomainInputsFile is: " + sampleDomainInputsFile);
@@ -1937,15 +1947,31 @@ public class Domain {
               StandardCopyOption.REPLACE_EXISTING);
         }
       } else if (domainMap.containsKey("rcuDatabaseURL")) {
-        Files.copy(
-            new File(BaseTest.getProjectRoot() + "/" + domainMap.get("createDomainPyScript"))
-                .toPath(),
-            new File(
-                resultsDir
-                    + "/samples/scripts/create-fmw-infrastructure-domain/domain-home-on-pv/"
-                    + "common/createFMWDomain.py")
-                .toPath(),
-            StandardCopyOption.REPLACE_EXISTING);
+        if (((String)domainMap.get("fmwType")).equalsIgnoreCase("jrf")) {
+          LoggerHelper.getLocal().log(Level.INFO,
+              "This is JRF domain-home-on-pv domain ");
+          Files.copy(
+              new File(BaseTest.getProjectRoot() + "/" + domainMap.get("createDomainPyScript"))
+                  .toPath(),
+              new File(
+                  resultsDir
+                      + "/samples/scripts/create-fmw-infrastructure-domain/domain-home-on-pv/"
+                      + "common/createFMWDomain.py")
+                  .toPath(),
+                StandardCopyOption.REPLACE_EXISTING);
+        } else if (((String)domainMap.get("fmwType")).equalsIgnoreCase("soa")) {
+          LoggerHelper.getLocal().log(Level.INFO,
+              "This is SOA domain-home-on-pv domain ");
+          Files.copy(
+              new File(BaseTest.getProjectRoot() + "/" + domainMap.get("createDomainPyScript"))
+                 .toPath(),
+              new File(
+                  resultsDir
+                      + "/samples/scripts/create-fmw-infrastructure-domain/domain-home-on-pv/"
+                      + "common/createFMWDomain.py")
+                  .toPath(),
+                StandardCopyOption.REPLACE_EXISTING);
+        }
       } else {
         // domain on pv case
         Files.copy(
@@ -1982,9 +2008,19 @@ public class Domain {
           .append(BaseTest.getPassword())
           .append(" -k -i ");
     } else if (domainMap.containsKey("rcuDatabaseURL")) {
-      createDomainScriptCmd.append(
-          "/samples/scripts/create-fmw-infrastructure-domain/"
-              + "domain-home-on-pv/create-domain.sh -v -i ");
+      if (((String)domainMap.get("fmwType")).equalsIgnoreCase("jrf")) {
+        LoggerHelper.getLocal().log(Level.INFO,
+            "This is JRF domain-home-on-pv domain ");
+        createDomainScriptCmd.append(
+            "/samples/scripts/create-fmw-infrastructure-domain/"
+                + "domain-home-on-pv/create-domain.sh -v -i ");
+      } else if (((String)domainMap.get("fmwType")).equalsIgnoreCase("soa")) {
+        LoggerHelper.getLocal().log(Level.INFO,
+            "This is SOA domain-home-on-pv domain ");
+        createDomainScriptCmd.append(
+            "/samples/scripts/create-soa-domain/"
+                + "domain-home-on-pv/create-domain.sh -v -i ");
+      }
     } else {
       createDomainScriptCmd.append(
           "/samples/scripts/create-weblogic-domain/domain-home-on-pv/create-domain.sh -v -i ");
