@@ -44,7 +44,7 @@ public class FmwDomain extends Domain {
     createRcuSecret();
     generateInputYaml();
     callCreateDomainScript(userProjectsDir);
-    createLoadBalancer();
+    //createLoadBalancer();
   }
 
   /**

@@ -65,7 +65,11 @@ function pull_tag_images_jrf {
   set +x
   # Check if fwm infra image exists
   if [ -z "$OCR_USERNAME" ] || [ -z "$OCR_PASSWORD" ]; then
-	if [ -z $(docker images -q $IMAGE_NAME_WEBLOGIC:$IMAGE_TAG_WEBLOGIC) ]; then
+	if [ -z $(docker images -q $IMAGE_NAME_FMWINFRA:$IMAGE_TAG_FMWINFRA) ]; then
+		echo "Image $IMAGE_NAME_FMWINFRA:$IMAGE_TAG_FMWINFRA doesn't exist. Provide Docker login details using env variables OCR_USERNAME and OCR_PASSWORD to pull the image."
+	  	exit 1
+	fi
+	if [ -z $(docker images -q $IMAGE_NAME_SOASUITE:$IMAGE_TAG_SOASUITE) ]; then
 		echo "Image $IMAGE_NAME_FMWINFRA:$IMAGE_TAG_FMWINFRA doesn't exist. Provide Docker login details using env variables OCR_USERNAME and OCR_PASSWORD to pull the image."
 	  	exit 1
 	fi
@@ -80,6 +84,9 @@ function pull_tag_images_jrf {
 
   # pull fmw infra images
   docker pull $IMAGE_NAME_FMWINFRA:$IMAGE_TAG_FMWINFRA
+  
+  # pull soa suite images
+  docker pull $IMAGE_NAME_SOASUITE:$IMAGE_TAG_SOASUITE
 
   # pull oracle db image
   docker pull $IMAGE_NAME_ORACLEDB:$IMAGE_TAG_ORACLEDB
@@ -101,13 +108,16 @@ export OPENSHIFT=${OPENSHIFT:-false}
 
 if [ "$JRF_ENABLED" = true ] ; then
   export FMWINFRA_IMAGE_URI=/middleware/fmw-infrastructure
+  export SOASUITE_IMAGE_URI=/middleware/soasuite
   export IMAGE_TAG_FMWINFRA="${IMAGE_TAG_FMWINFRA:-12.2.1.3}"
+  export IMAGE_TAG_SOASUITE="${IMAGE_TAG_SOASUITE:-12.2.1.3}"
   export DB_IMAGE_URI=/database/enterprise
   export IMAGE_NAME_ORACLEDB="${IMAGE_NAME_ORACLEDB:-`echo ${OCR_SERVER}``echo ${DB_IMAGE_URI}`}"
   export IMAGE_TAG_ORACLEDB="${IMAGE_TAG_ORACLEDB:-12.2.0.1-slim}"
 fi
 export IMAGE_NAME_WEBLOGIC="${IMAGE_NAME_WEBLOGIC:-`echo ${OCR_SERVER}``echo ${WLS_IMAGE_URI}`}"
 export IMAGE_NAME_FMWINFRA="${IMAGE_NAME_FMWINFRA:-`echo ${OCR_SERVER}``echo ${FMWINFRA_IMAGE_URI}`}"
+export IMAGE_NAME_SOASUITE="${IMAGE_NAME_SOASUITE:-`echo ${OCR_SERVER}``echo ${SOASUITE_IMAGE_URI}`}"
 export IMAGE_PULL_SECRET_WEBLOGIC="${IMAGE_PULL_SECRET_WEBLOGIC:-docker-store}"
     
 if [ -z "$BRANCH_NAME" ]; then

@@ -32,11 +32,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(Alphanumeric.class)
 
-public class ItJrfPvWlst extends BaseTest {
-  private static String rcuSchemaPrefix = "jrfdomain";
-  private static String rcuSchemaType = "fmw";
+public class ItSoaPvWlst extends BaseTest {
+  private static String rcuSchemaPrefix = "soadomain";
+  private static String rcuSchemaType = "soa";
   private static String dbUrl = "oracle-db.default.svc.cluster.local:1521/devpdb.k8s";
-  private static String fmwImage = "container-registry.oracle.com/middleware/fmw-infrastructure:12.2.1.3";
+  private static String fmwImage = "container-registry.oracle.com/middleware/soasuite:12.2.1.3";
   private static Operator operator1;
   private static String domainNS;
   private static String domainUid = "";
@@ -105,7 +105,7 @@ public class ItJrfPvWlst extends BaseTest {
   *
   * @throws Exception - if any error occurs
   */
-  @AfterAll
+  //@AfterAll
   public static void staticUnPrepare() throws Exception {
     tearDown(new Object() {
     }.getClass().getEnclosingClass().getSimpleName(), namespaceList.toString());
@@ -114,7 +114,7 @@ public class ItJrfPvWlst extends BaseTest {
   }
  
   @Test
-  public void testJrfDomainOnPvUsingWlst() throws Exception {
+  public void testSoaDomainOnPvUsingWlst() throws Exception {
     if (QUICKTEST) {
       String testMethodName = new Object() {
       }.getClass().getEnclosingMethod().getName();
@@ -122,34 +122,34 @@ public class ItJrfPvWlst extends BaseTest {
       LoggerHelper.getLocal().log(Level.INFO,
           "Creating Operator & waiting for the script to complete execution");
       
-      FmwDomain jrfdomain = null;
+      FmwDomain soadomain = null;
       boolean testCompletedSuccessfully = false;
 
       try {
-        // create JRF domain
+        // create SOA domain
         Map<String, Object> domainMap = createDomainMap(getNewSuffixCount(), testClassName);
         domainMap.put("namespace", domainNS);
         domainMap.put("initialManagedServerReplicas", new Integer("2"));
-        domainMap.put("image", fmwImage);
-        domainMap.put("clusterName", "infra-cluster");
-        domainMap.put("managedServerNameBase", "infraserver");
+        domainMap.put("image", "container-registry.oracle.com/middleware/soasuite:12.2.1.3");
+        domainMap.put("clusterName", "soa-cluster");
+        domainMap.put("managedServerNameBase", "soaserver");
         domainMap.put("rcuSchemaPrefix", rcuSchemaPrefix);
         domainMap.put("rcuDatabaseURL", dbUrl);
-        domainMap.put("fmwType", "jrf");
+        domainMap.put("fmwType", "soa");
         domainUid = (String) domainMap.get("domainUID");
         LoggerHelper.getLocal().log(Level.INFO,
             "Creating and verifying the domain creation with domainUid: " + domainUid);
 
-        jrfdomain = new FmwDomain(domainMap);
-        jrfdomain.verifyDomainCreated();
+        soadomain = new FmwDomain(domainMap);
+        soadomain.verifyDomainCreated();
         
         // basic test cases
-        testBasicUseCases(jrfdomain, false);
+        testBasicUseCases(soadomain, false);
 
         testCompletedSuccessfully = true;
       } finally {
-        if (jrfdomain != null  && (JENKINS || testCompletedSuccessfully)) {
-          jrfdomain.shutdownUsingServerStartPolicy();
+        if (soadomain != null  && (JENKINS || testCompletedSuccessfully)) {
+          soadomain.shutdownUsingServerStartPolicy();
         }
       }
 
