@@ -131,6 +131,8 @@ public class ItSoaPvWlst extends BaseTest {
         domainMap.put("namespace", domainNS);
         domainMap.put("initialManagedServerReplicas", new Integer("2"));
         domainMap.put("image", "container-registry.oracle.com/middleware/soasuite:12.2.1.3");
+        LoggerHelper.getLocal().log(Level.INFO,
+             "SOA IMAGE USED IS: " + (String)domainMap.get("image"));
         domainMap.put("clusterName", "soa-cluster");
         domainMap.put("managedServerNameBase", "soaserver");
         domainMap.put("rcuSchemaPrefix", rcuSchemaPrefix);
