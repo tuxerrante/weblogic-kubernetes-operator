@@ -1736,7 +1736,12 @@ public class Domain {
     domainMap.put("logHome", "/shared/logs/" + domainUid);
     if (!domainMap.containsKey("domainHomeImageBase")) {
       domainMap.put("domainHome", "/shared/domains/" + domainUid);
-      domainMap.put("image", imageName + ":" + imageTag);
+      if (!domainMap.containsKey("image")) {
+        domainMap.put("image", imageName + ":" + imageTag);
+        //for debugging
+        LoggerHelper.getLocal().log(Level.INFO,
+             "PRE SET IMAGE: " + (String)domainMap.get("image"));
+      }
       if (System.getenv("IMAGE_PULL_SECRET_WEBLOGIC") != null) {
         domainMap.put("imagePullSecretName", System.getenv("IMAGE_PULL_SECRET_WEBLOGIC"));
       } else {
