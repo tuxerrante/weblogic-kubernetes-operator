@@ -105,7 +105,7 @@ public class ItSoaPvWlst extends BaseTest {
   *
   * @throws Exception - if any error occurs
   */
-  //@AfterAll
+  @AfterAll
   public static void staticUnPrepare() throws Exception {
     tearDown(new Object() {
     }.getClass().getEnclosingClass().getSimpleName(), namespaceList.toString());
