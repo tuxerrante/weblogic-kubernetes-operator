@@ -1742,6 +1742,9 @@ public class Domain {
         LoggerHelper.getLocal().log(Level.INFO,
              "PRE SET IMAGE: " + (String)domainMap.get("image"));
       }
+      //debugging
+      LoggerHelper.getLocal().log(Level.INFO,
+           "Domain.initialize() IMAGE USED IS: " + (String)domainMap.get("image"));
       if (System.getenv("IMAGE_PULL_SECRET_WEBLOGIC") != null) {
         domainMap.put("imagePullSecretName", System.getenv("IMAGE_PULL_SECRET_WEBLOGIC"));
       } else {
