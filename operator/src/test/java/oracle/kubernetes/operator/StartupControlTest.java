@@ -30,6 +30,7 @@ import oracle.kubernetes.utils.TestUtils;
 import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static oracle.kubernetes.operator.StartupControlTest.StepPresenceMatcher.containsStep;
@@ -138,6 +139,7 @@ public class StartupControlTest {
     review.status(new V1SubjectRulesReviewStatus().resourceRules(rules));
   }
 
+  @Ignore
   @Test
   public void whenDedicated_allowAccessToSpecifiedResources() {
     environmentVariables.put(StartupControl.OPERATOR_DEDICATED_ENV, "true");
@@ -154,6 +156,7 @@ public class StartupControlTest {
     assertThat(firstStep, instanceOf(CrdHelper.CrdStep.class));
   }
 
+  @Ignore
   @Test
   public void whenDedicatedAndHaveCrdReadAccess_firstStepIsCrdStep() {
     environmentVariables.put(StartupControl.OPERATOR_DEDICATED_ENV, "true");
@@ -193,6 +196,7 @@ public class StartupControlTest {
     assertThat(firstStep, containsStep(namespaceStep));
   }
 
+  @Ignore
   @Test
   public void whenDedicatedAndHaveNamespaceListAccess_chainIncludesReadNamespaceStep() {
     environmentVariables.put(StartupControl.OPERATOR_DEDICATED_ENV, "true");

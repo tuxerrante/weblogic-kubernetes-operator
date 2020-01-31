@@ -83,6 +83,7 @@ public class StartupControl {
    *         permission via RBAC policies
    */
   public boolean isClusterAccessAllowed(Resource resource, Operation op) {
-    return !isDedicated() || HealthCheckHelper.isClusterResourceAccessAllowed(version, resource, op);
+    // return !isDedicated() || HealthCheckHelper.isClusterResourceAccessAllowed(version, resource, op);
+    return !isDedicated();
   }
 }
