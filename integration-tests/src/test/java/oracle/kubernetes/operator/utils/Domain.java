@@ -1411,6 +1411,8 @@ public class Domain {
     Path parentDir =
         Files.createDirectories(Paths.get(userProjectsDir + "/weblogic-domains/" + domainUid));
     generatedInputYamlFile = parentDir + "/weblogic-domain-values.yaml";
+    LoggerHelper.getLocal().log(Level.INFO,
+         "Domain.generateInPutYaml IMAGE USED IS: " + (String)domainMap.get("image"));
     TestUtils.createInputFile(domainMap, generatedInputYamlFile);
   }
 
@@ -1674,14 +1676,10 @@ public class Domain {
           "/samples/scripts/create-weblogic-domain/domain-home-in-image/create-domain-inputs.yaml";
     } else if (domainMap.containsKey("rcuDatabaseURL")) {
       if (((String)domainMap.get("fmwType")).equalsIgnoreCase("jrf")) {
-        LoggerHelper.getLocal().log(Level.INFO,
-            "This is JRF domain-home-on-pv domain ");
         sampleDomainInputsFile =
           "/samples/scripts/create-fmw-infrastructure-domain/"
               + "domain-home-on-pv/create-domain-inputs.yaml";
       } else if (((String)domainMap.get("fmwType")).equalsIgnoreCase("soa")) {
-        LoggerHelper.getLocal().log(Level.INFO,
-            "This is SOA domain-home-on-pv domain ");
         sampleDomainInputsFile =
             "/samples/scripts/create-soa-domain/"
                 + "domain-home-on-pv/create-domain-inputs.yaml";
@@ -1778,6 +1776,8 @@ public class Domain {
     }
     // remove null values if any attributes
     domainMap.values().removeIf(Objects::isNull);
+    LoggerHelper.getLocal().log(Level.INFO,
+         "Domain.initialize() after removeIf() Image: " + (String)domainMap.get("image"));
 
     // create config map and secret for custom sit config
     createConfigMapAndSecretForSitConfig();

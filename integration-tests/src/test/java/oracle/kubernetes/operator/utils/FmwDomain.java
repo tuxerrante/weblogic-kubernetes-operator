@@ -16,7 +16,7 @@ public class FmwDomain extends Domain {
   /**
    * FmwDomain constructor.
    *
-   * @param inputYaml - jrf domain input yaml file, which should contain the properties used for jrf
+   * @param inputYaml - fmw domain input yaml file, which should contain the properties used for jrf
    *     domain creation
    * @throws Exception - if any error occurs
    */
@@ -42,6 +42,8 @@ public class FmwDomain extends Domain {
     createPv();
     createSecret();
     createRcuSecret();
+    LoggerHelper.getLocal().log(Level.INFO,
+        "Class FmwDomain IMAGE USED IS: " + (String)domainMap.get("image"));
     generateInputYaml();
     callCreateDomainScript(userProjectsDir);
     //createLoadBalancer();
@@ -55,7 +57,7 @@ public class FmwDomain extends Domain {
    */
   private void updateDomainMapForJrf(boolean adminPortEnabled) throws Exception {
     // jrf specific input parameter
-    domainMap.put(
+    /*domainMap.put(
         "image",
         DbUtils.DEFAULT_FMWINFRA_DOCKER_IMAGENAME + ":" + DbUtils.DEFAULT_FMWINFRA_DOCKER_IMAGETAG);
 
@@ -63,7 +65,7 @@ public class FmwDomain extends Domain {
       domainMap.put("imagePullSecretName", System.getenv("IMAGE_PULL_SECRET_FMWINFRA"));
     } else {
       domainMap.put("imagePullSecretName", "docker-store");
-    }
+    }*/
 
     // update create-domain-script.sh if adminPortEnabled is true
     if (adminPortEnabled) {
