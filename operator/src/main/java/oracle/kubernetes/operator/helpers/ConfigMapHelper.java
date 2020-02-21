@@ -582,18 +582,22 @@ public class ConfigMapHelper {
 
       V1ConfigMap result = callResponse.getResult();
       if (result != null) {
-        Map<String, String> data = result.getData();
-        String topologyYaml = data.get("topology.yaml");
-        if (topologyYaml != null) {
-          ConfigMapHelper.DomainTopology domainTopology =
-              ConfigMapHelper.parseDomainTopologyYaml(topologyYaml);
-          if (domainTopology != null) {
-            WlsDomainConfig wlsDomainConfig = domainTopology.getDomain();
-            ScanCache.INSTANCE.registerScan(
-                info.getNamespace(),
-                info.getDomainUid(),
-                new Scan(wlsDomainConfig, new DateTime()));
-            packet.put(ProcessingConstants.DOMAIN_TOPOLOGY, wlsDomainConfig);
+        // Validate that the config map is not older than the domain resource creation timestamp as this
+        // indicates that the config map was stranded from an earlier run.
+        if (!KubernetesUtils.isFirstNewer(result.getMetadata(), info.getDomain().getMetadata())) {
+          Map<String, String> data = result.getData();
+          String topologyYaml = data.get("topology.yaml");
+          if (topologyYaml != null) {
+            ConfigMapHelper.DomainTopology domainTopology =
+                ConfigMapHelper.parseDomainTopologyYaml(topologyYaml);
+            if (domainTopology != null) {
+              WlsDomainConfig wlsDomainConfig = domainTopology.getDomain();
+              ScanCache.INSTANCE.registerScan(
+                  info.getNamespace(),
+                  info.getDomainUid(),
+                  new Scan(wlsDomainConfig, new DateTime()));
+              packet.put(ProcessingConstants.DOMAIN_TOPOLOGY, wlsDomainConfig);
+            }
           }
         }
       }
