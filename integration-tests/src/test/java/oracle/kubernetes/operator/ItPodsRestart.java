@@ -238,7 +238,7 @@ public class ItPodsRestart extends BaseTest {
    *
    * @throws Exception exception
    */
-  //@Test
+  @Test
   public void testServerPodsRestartByChangingZImage() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
