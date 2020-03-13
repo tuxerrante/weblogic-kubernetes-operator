@@ -110,6 +110,9 @@ public class Domain {
                 boolean createDomainResource, boolean createLoadBalancer)
       throws Exception {
     initialize(inputDomainMap);
+
+    // I don't like that the actual create calls are in the constructor
+
     this.createDomainResource = createDomainResource;
     this.createLoadBalancer = createLoadBalancer;
     createPv();

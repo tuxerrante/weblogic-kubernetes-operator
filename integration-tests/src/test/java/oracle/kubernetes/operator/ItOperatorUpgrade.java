@@ -77,7 +77,7 @@ public class ItOperatorUpgrade extends BaseTest {
    */
   @AfterEach
   public void cleanupOperatorAndDomain() throws Exception {
-    if (testCompletedSuccessfully) {
+    if (testCompletedSuccessfully) { // This looks problematic -- not clear that this shouldn't happen at end anyway
       LoggerHelper.getLocal().log(Level.INFO, "+++++++++++++++Beginning AfterTest cleanup+++++++++++++++++++++");
       if (domain != null) {
         //domain.destroy();
@@ -101,8 +101,8 @@ public class ItOperatorUpgrade extends BaseTest {
    */
   @Test
   public void testOperatorUpgradeFrom2_0() throws Exception {
-    Assumptions.assumeTrue(FULLTEST);
-    testCompletedSuccessfully = false;
+    Assumptions.assumeTrue(FULLTEST); // Use JUnit tags
+    testCompletedSuccessfully = false; // Field is used in magic clean-up
     String testMethod = new Object() {
     }.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethod);
@@ -111,6 +111,10 @@ public class ItOperatorUpgrade extends BaseTest {
     OP_SA = "operator-sa20";
     DOM_NS = "weblogic-domain20";
     DUID = "operatordomain20";
+
+    // I don't like the way this "2.0" is being used.  Rather than just pull the operator image or using the Helm chart
+    // published on the site, this is rebuilding 2.0.
+
     setupOperatorAndDomain("2.0", "2.0");
     upgradeOperator(true);
     testCompletedSuccessfully = true;
@@ -261,6 +265,9 @@ public class ItOperatorUpgrade extends BaseTest {
             + getDomainApiVersion()
             + " in a loop for up to 15 minutes");
     for (int i = 0; i < 900; i = i + 10) {
+
+      // Need to verify.  This doesn't seem like a closed-form way to check.
+
       ExecResult exec =
           TestUtils.exec(
               "kubectl get domain -n " + DOM_NS + "  " + DUID + " -o jsonpath={.apiVersion}", true);
@@ -293,6 +300,10 @@ public class ItOperatorUpgrade extends BaseTest {
     }
   }
 
+
+  // This seems odd to have one method to setup operator and domain
+  // Instead, setup operator, have some assertions, then continue to a different method
+  // that does the same for domain
 
   /**
    * Creates operator based on operatorRelease passed to it and then creates a WebLogic domain
@@ -331,6 +342,9 @@ public class ItOperatorUpgrade extends BaseTest {
     wlstDomainMap.put("projectRoot", opUpgradeTmpDir + "/weblogic-kubernetes-operator");
     domain = TestUtils.createDomain(wlstDomainMap);
     // TestUtils.exec("kubectl get all --all-namespaces", true);
+
+    // Interesting that "assertions" are here while createOperator embeds the checks.
+
     domain.verifyPodsCreated();
     domain.verifyServicesCreated();
     domain.verifyServersReady();

@@ -80,6 +80,9 @@ public class TestUtils {
     StringBuffer cmd = new StringBuffer();
     cmd.append("kubectl get pod ").append(podName).append(" -n ").append(domainNS);
 
+    // Probably works, but should be a little more specific
+    // Nothing here tells me why the assertion check fails
+
     // check for pod to be running
     checkCmdInLoop(cmd.toString(), "Running", podName);
   }
@@ -1053,6 +1056,9 @@ public class TestUtils {
         "Creating domain with yaml, waiting for the script to complete execution");
     return new Domain(inputYaml, createDomainResource);
   }
+
+  // A very surprising amount of behavior is buried in the Domain constructor
+  // building domain-home-in-image Docker images, PV's, secrets, and applying domain yaml
 
   /**
    * Create domain.

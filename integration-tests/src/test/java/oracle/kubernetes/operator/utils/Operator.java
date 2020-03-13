@@ -105,7 +105,13 @@ public class Operator {
     LoggerHelper.getLocal().log(Level.INFO, "Checking if Operator pod is Running");
     // empty string for pod name as there is only one pod
     TestUtils.checkPodCreated("", operatorNS);
+
+    // This isn't a great assertion that the operator is ready
   }
+
+  // Similar concern about verifyOperatorReady and other checks
+  // Need a pattern that watches.  No need to print on iterations
+  // When fails need much better detail on the state
 
   /**
    * verifies operator pod is deleted.
