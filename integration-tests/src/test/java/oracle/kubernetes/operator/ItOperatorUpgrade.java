@@ -306,7 +306,7 @@ public class ItOperatorUpgrade extends BaseTest {
   private void setupOperatorAndDomain(String operatorGitRelease, String operatorRelease)
       throws Exception {
     LoggerHelper.getLocal().log(Level.INFO, "+++++++++++++++Beginning Test Setup+++++++++++++++++++++");
-    opUpgradeTmpDir = getResultDir() + "/operatorupgrade";
+    opUpgradeTmpDir = getResultDir() + "/operatorupgrade/" + operatorRelease;
     TestUtils.exec("rm -rf " + Paths.get(opUpgradeTmpDir).toString());
     Files.createDirectories(Paths.get(opUpgradeTmpDir));
     Map<String, Object> operatorMap = createOperatorMap(getNewSuffixCount(), true, "");
