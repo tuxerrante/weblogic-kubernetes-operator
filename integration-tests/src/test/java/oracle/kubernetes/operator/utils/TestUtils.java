@@ -1649,6 +1649,8 @@ public class TestUtils {
         LoggerHelper.getLocal().log(Level.INFO, "Output for " + cmd + "\n" + result.stdout() + "\n " + result.stderr());
         // check for last iteration
         if (i == (BaseTest.getMaxIterationsPod() - 1)) {
+          LoggerHelper.getLocal().log(Level.SEVERE, "FAILURE: Timeout - pod " + k8sObjName + " output does not contain '" 
+                + matchStr + "'");
           throw new RuntimeException(
               "FAILURE: Timeout - pod " + k8sObjName + " output does not contain '" + matchStr + "'");
         }
