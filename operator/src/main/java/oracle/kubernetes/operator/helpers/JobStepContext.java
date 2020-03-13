@@ -281,9 +281,9 @@ public abstract class JobStepContext extends BasePodStepContext {
       podSpec.addVolumesItem(new V1Volume().name(WDT_ENCRYPT_PASSPHRASE_VOLUME)
           .secret(getWdtEncryptPassPhraseVolume()));
     }
-    if (getModelInImagePassPhraseVolume() != null) {
+    if (getRuntimeEncryptionSecretVolume() != null) {
       podSpec.addVolumesItem(new V1Volume().name(RUNTIME_ENCRYPTION_SECRET_VOLUME)
-          .secret(getModelInImagePassPhraseVolume()));
+          .secret(getRuntimeEncryptionSecretVolume()));
     }
 
 
@@ -332,7 +332,7 @@ public abstract class JobStepContext extends BasePodStepContext {
       container.addVolumeMountsItem(readOnlyVolumeMount(WDT_ENCRYPT_PASSPHRASE_VOLUME, WDT_ENCRYPT_KEY_MOUNT_PATH));
     }
 
-    if (getModelInImagePassPhraseVolume() != null) {
+    if (getRuntimeEncryptionSecretVolume() != null) {
       container.addVolumeMountsItem(readOnlyVolumeMount(RUNTIME_ENCRYPTION_SECRET_VOLUME,
           RUNTIME_ENCRYPTION_SECRET_MOUNT_PATH));
     }
@@ -419,7 +419,7 @@ public abstract class JobStepContext extends BasePodStepContext {
     return null;
   }
 
-  private V1SecretVolumeSource getModelInImagePassPhraseVolume() {
+  private V1SecretVolumeSource getRuntimeEncryptionSecretVolume() {
     if (getRuntimeEncryptionSecretName() != null) {
       V1SecretVolumeSource result = new V1SecretVolumeSource()
           .secretName(getRuntimeEncryptionSecretName())
