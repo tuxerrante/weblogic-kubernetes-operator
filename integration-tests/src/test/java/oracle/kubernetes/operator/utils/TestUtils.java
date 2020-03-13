@@ -1,8 +1,10 @@
 // Copyright (c) 2018, 2020, Oracle Corporation and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 package oracle.kubernetes.operator.utils;
 
 import io.kubernetes.client.openapi.models.V1Pod;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -26,8 +29,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import oracle.kubernetes.operator.BaseTest;
 import oracle.kubernetes.operator.utils.Operator.RestCertType;
+
 import org.glassfish.jersey.jsonp.JsonProcessingFeature;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
