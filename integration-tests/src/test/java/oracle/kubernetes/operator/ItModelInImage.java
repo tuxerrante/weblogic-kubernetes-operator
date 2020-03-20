@@ -1,6 +1,5 @@
 // Copyright (c) 2020, Oracle Corporation and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
-
 package oracle.kubernetes.operator;
 
 import java.nio.charset.Charset;
@@ -30,10 +29,11 @@ import org.junit.jupiter.api.Test;
 /**
  * Simple JUnit test file used for testing Model in Image.
  *
- * <p>This test is used for creating domain using model in image.
+ * <p>
+ * This test is used for creating domain using model in image.
  */
-
 public class ItModelInImage extends BaseTest {
+
   private static Operator operator;
   private static String domainNS;
   private static String testClassName;
@@ -56,8 +56,8 @@ public class ItModelInImage extends BaseTest {
   }
 
   /**
-   * This method gets called before every test. It creates the result/pv root directories
-   * for the test. Creates the operator and domain if its not running.
+   * This method gets called before every test. It creates the result/pv root directories for the
+   * test. Creates the operator and domain if its not running.
    *
    * @throws Exception exception if result/pv/operator/domain creation fails
    */
@@ -76,7 +76,7 @@ public class ItModelInImage extends BaseTest {
       operator = TestUtils.createOperator(operatorMap, RestCertType.SELF_SIGNED);
       Assertions.assertNotNull(operator);
       domainNS = ((ArrayList<String>) operatorMap.get("domainNamespaces")).get(0);
-      namespaceList.append((String)operatorMap.get("namespace"));
+      namespaceList.append((String) operatorMap.get("namespace"));
       namespaceList.append(" ").append(domainNS);
     }
   }
@@ -95,9 +95,9 @@ public class ItModelInImage extends BaseTest {
   }
 
   /**
-   * Create a domain using model in image with model yaml and model properties
-   * file in the image. Deploy the domain, verify the running domain has
-   * the correct configuration as given in the image.
+   * Create a domain using model in image with model yaml and model properties file in the image.
+   * Deploy the domain, verify the running domain has the correct configuration as given in the
+   * image.
    *
    * @throws Exception exception
    */
@@ -112,8 +112,8 @@ public class ItModelInImage extends BaseTest {
     Domain domain = null;
     boolean testCompletedSuccessfully = false;
     try {
-      Map<String, Object> domainMap =
-          createModelInImageMap(getNewSuffixCount(), testClassName);
+      Map<String, Object> domainMap
+          = createModelInImageMap(getNewSuffixCount(), testClassName);
       domainMap.put("namespace", domainNS);
       domainMap.put("wdtModelFile", "./model.wls.yaml");
       domainMap.put("wdtModelPropertiesFile", "./model.properties");
@@ -132,9 +132,9 @@ public class ItModelInImage extends BaseTest {
   }
 
   /**
-   * Create a domain using model in image and having configmap in the domain.yaml
-   * before deploying the domain. Verify the running domain has configuration given
-   * in configmap
+   * Create a domain using model in image and having configmap in the domain.yaml before deploying
+   * the domain. Verify the running domain has configuration given in configmap
+   *
    * @throws Exception exception
    */
   @Test
@@ -148,8 +148,8 @@ public class ItModelInImage extends BaseTest {
     Domain domain = null;
     boolean testCompletedSuccessfully = false;
     try {
-      Map<String, Object> domainMap =
-          createModelInImageMap(getNewSuffixCount(), testClassName);
+      Map<String, Object> domainMap
+          = createModelInImageMap(getNewSuffixCount(), testClassName);
       // config map before deploying domain crd
       String cmName = domainMap.get("domainUID") + "-mii-config-map";
       String cmFile = "./model.cm.properties";
@@ -177,11 +177,11 @@ public class ItModelInImage extends BaseTest {
   }
 
   /**
-   * Create a domain using model in image and having configmap in the domain.yaml
-   * before deploying the domain. After deploying the domain crd, create a new
-   * config map and update the domain crd to new config map and change domain
-   * restartVersion to reload the model, generate new config and initiate a
-   * rolling restart.
+   * Create a domain using model in image and having configmap in the domain.yaml before deploying
+   * the domain. After deploying the domain crd, create a new config map and update the domain crd
+   * to new config map and change domain restartVersion to reload the model, generate new config and
+   * initiate a rolling restart.
+   *
    * @throws Exception exception
    */
   @Test
@@ -195,8 +195,8 @@ public class ItModelInImage extends BaseTest {
     Domain domain = null;
     boolean testCompletedSuccessfully = false;
     try {
-      Map<String, Object> domainMap =
-          createModelInImageMap(getNewSuffixCount(), testClassName);
+      Map<String, Object> domainMap
+          = createModelInImageMap(getNewSuffixCount(), testClassName);
       // config map before deploying domain crd
       String cmName = domainMap.get("domainUID") + "-mii-config-map1";
       String cmFile = "./model.properties";
@@ -233,11 +233,10 @@ public class ItModelInImage extends BaseTest {
   }
 
   /**
-   * Negative test. overridesConfigMap should fail with model in image domain.
-   * Create a domain using model in image and deploy the domain.
-   * After deploying the domain, update domain crd with overrides configmap and
-   * apply the crd.
-   * Verify that the domain deployment fails with proper error in the operator log.
+   * Negative test. overridesConfigMap should fail with model in image domain. Create a domain using
+   * model in image and deploy the domain. After deploying the domain, update domain crd with
+   * overrides configmap and apply the crd. Verify that the domain deployment fails with proper
+   * error in the operator log.
    *
    * @throws Exception exception
    */
@@ -252,10 +251,10 @@ public class ItModelInImage extends BaseTest {
     Domain domain = null;
     boolean testCompletedSuccessfully = false;
     try {
-      Map<String, Object> domainMap =
-          createModelInImageMap(getNewSuffixCount(), testClassName);
+      Map<String, Object> domainMap
+          = createModelInImageMap(getNewSuffixCount(), testClassName);
       domainMap.put("namespace", domainNS);
-      String domainUid = (String)domainMap.get("domainUID");
+      String domainUid = (String) domainMap.get("domainUID");
       String overridesConfigMap = domainUid + "-mii-overrides-config-map";
       String overridesConfigMapFileOrDir = "./model.cm.properties";
       // the below override attributes are just place holders,
@@ -273,9 +272,86 @@ public class ItModelInImage extends BaseTest {
       //append overridesConfigMap to domain.yaml
       domain.appendOverridesConfigMapAndApply();
 
-
       //ToDo: access MS using port given in configmap props
+      testCompletedSuccessfully = true;
+    } finally {
+      if (domain != null && (JENKINS || testCompletedSuccessfully)) {
+        TestUtils.deleteWeblogicDomainResources(domain.getDomainUid());
+      }
+    }
 
+    LoggerHelper.getLocal().log(Level.INFO, "SUCCESS - " + testMethodName);
+  }
+
+  /**
+   * Create a domain using model in image with model yaml and model properties file in the image.
+   * Deploy the domain, verify the running domain has the correct configuration as given in the
+   * image.
+   *
+   * @throws Exception exception
+   */
+  @Test
+  public void testCredentialsChange() throws Exception {
+    Assumptions.assumeTrue(QUICKTEST);
+    String testMethodName = new Object() {
+    }.getClass().getEnclosingMethod().getName();
+    logTestBegin(testMethodName);
+    LoggerHelper.getLocal().log(Level.INFO,
+        "Creating Domain & waiting for the script to complete execution");
+    Domain domain = null;
+    boolean testCompletedSuccessfully = false;
+    try {
+      Map<String, Object> domainMap
+          = createModelInImageMap(getNewSuffixCount(), testClassName);
+      domainMap.put("namespace", domainNS);
+      domainMap.put("wdtModelFile", "./model.wls.yaml");
+      domainMap.put("wdtModelPropertiesFile", "./model.properties");
+
+      domain = TestUtils.createDomain(domainMap);
+      // domain = new Domain(domainMap, true, false);
+      domain.verifyDomainCreated();
+      testAdminT3Channel(domain, true);
+      domain.undeployWebAppViaWlst(TESTWEBAPP, appLocationInPod);
+
+      // change the weblogic credentials via the
+      // kubectl -n $NAMESPACE delete secret         $SECRET_NAME --ignore-not-found
+      // kubectl -n $NAMESPACE create secret generic $SECRET_NAME $LITERALS $FILENAMES
+      // kubectl -n $NAMESPACE label  secret         $SECRET_NAME weblogic.domainUID=$DOMAIN_UID
+      TestUtils.kubectlexecNoCheck(domainNS, TESTWSAPP, TESTWEBAPP);
+      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  delete secret sample-domain1-weblogic-credentials "
+          + "--ignore-not-found");
+      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  create secret generic -l username=system -l "
+          + "password=gumby1234");
+      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  label secret sample-domain1-weblogic-credentials "
+          + "weblogic.domainUID=" + (String) domainMap.get("domainUID"));
+
+      String originalYaml
+          = getUserProjectsDir()
+          + "/weblogic-domains/"
+          + domain.getDomainUid()
+          + "/domain.yaml";
+      // Modify the original domain yaml to include restartVersion in admin server node
+      DomainCrd crd = new DomainCrd(originalYaml);
+      Map<String, String> objectNode = new HashMap();
+      objectNode.put("restartVersion", "v1.1");
+      crd.addObjectNodeToDomain(objectNode);
+      String modYaml = crd.getYamlTree();
+      LoggerHelper.getLocal().log(Level.INFO, modYaml);
+      // Write the modified yaml to a new file
+      Path path = Paths.get(getUserProjectsDir()
+          + "/weblogic-domains/"
+          + domain.getDomainUid(), "modified.domain.yaml");
+      LoggerHelper.getLocal().log(Level.INFO, "Path of the modified domain.yaml :{0}", path.toString());
+      Charset charset = StandardCharsets.UTF_8;
+      Files.write(path, modYaml.getBytes(charset));
+
+      // Apply the new yaml to update the domain crd
+      LoggerHelper.getLocal().log(Level.INFO, "kubectl apply -f {0}", path.toString());
+      ExecResult exec = TestUtils.exec("kubectl apply -f " + path.toString());
+      LoggerHelper.getLocal().log(Level.INFO, exec.stdout());
+      LoggerHelper.getLocal().log(Level.INFO, "Verifying if the domain is restarted");
+      domain.verifyDomainRestarted();
+      testAdminT3Channel(domain, true);
       testCompletedSuccessfully = true;
     } finally {
       if (domain != null && (JENKINS || testCompletedSuccessfully)) {
@@ -289,11 +365,11 @@ public class ItModelInImage extends BaseTest {
   private void modifyDomainYamlWithNewConfigMapAndDomainRestartVersion(
       String cmName, Domain domain)
       throws Exception {
-    String originalYaml =
-        getUserProjectsDir()
-            + "/weblogic-domains/"
-            + domain.getDomainUid()
-            + "/domain.yaml";
+    String originalYaml
+        = getUserProjectsDir()
+        + "/weblogic-domains/"
+        + domain.getDomainUid()
+        + "/domain.yaml";
 
     // Modify the original domain yaml to include restartVersion in admin server node
     DomainCrd crd = new DomainCrd(originalYaml);
@@ -304,7 +380,7 @@ public class ItModelInImage extends BaseTest {
     LoggerHelper.getLocal().log(Level.INFO, modYaml);
 
     //change config map name to new config map
-    modYaml.replaceAll((String)domain.getDomainMap().get("miiConfigMap"), cmName);
+    modYaml.replaceAll((String) domain.getDomainMap().get("miiConfigMap"), cmName);
 
     // Write the modified yaml to a new file
     Path path = Paths.get(getUserProjectsDir()
