@@ -201,6 +201,7 @@ public class TestUtils {
   public static void createInputFile(Map<String, Object> map, String generatedInputYamlFile)
       throws Exception {
     LoggerHelper.getLocal().log(Level.INFO, "Creating input yaml file at " + generatedInputYamlFile);
+    LoggerHelper.getLocal().log(Level.INFO, "Creating input yaml file with MAP VALUES " + map.toString());
 
     DumperOptions options = new DumperOptions();
     options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -1234,7 +1235,7 @@ public class TestUtils {
       throws Exception {
 
     ExecCommand.exec("kubectl delete secret " + secretName + " -n " + namespace);
-    
+
     String command =
         "kubectl create secret docker-registry "
             + secretName
@@ -1245,15 +1246,15 @@ public class TestUtils {
             + " --docker-password=\""
             + dockerPassword
             + "\"";
-            
+
     if (dockerEmail != null) {
       command = command + " --docker-email=" + dockerEmail;
     }
-   
-    command = command + " -n " 
-        + namespace 
+
+    command = command + " -n "
+        + namespace
         + " --dry-run -o yaml | kubectl apply -f -";
-       
+
     String commandToLog =
         "kubectl create secret docker-registry "
             + secretName
