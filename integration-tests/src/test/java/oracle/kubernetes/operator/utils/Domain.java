@@ -1189,7 +1189,7 @@ public class Domain {
     }
     LoggerHelper.getLocal().log(Level.INFO, "Done - testDomainServerPodRestart");
   }
-   
+
   /**
    * Verify domain server pods get restarted after the property change by kubectl apply -f new
    * domain yaml file with added/changed property.
@@ -1221,7 +1221,7 @@ public class Domain {
         Paths.get(changedDomainYamlFile),
         Files.readAllBytes(Paths.get(fileWithChangedProperty)),
         StandardOpenOption.APPEND);
-    
+
     String oldPvc = "domainpodsrestart-weblogic-sample-pvc";
     String newPvc = domainUid + "-" + pvMap.get("baseName") + "-pvc";
     LoggerHelper.getLocal().log(Level.INFO, "newPvc in verifyDomainServerPodRestart: " + newPvc);
@@ -1242,13 +1242,13 @@ public class Domain {
     LoggerHelper.getLocal().log(
         Level.INFO, "Done - testDomainServerPodRestart with domainYamlWithChangedProperty");
   }
-   
+
   /**
    * Modify the property in the domain yaml file.
    *
    * @param oldString - the old property value
    * @param newString - the new property value
-   * @param oldFileName - the file name that has the oldString 
+   * @param oldFileName - the file name that has the oldString
    * @param newFileName - the file name that has the newString changed from the old one
    * @throws Exception - IOException or errors occurred during the call
    */
@@ -1279,7 +1279,7 @@ public class Domain {
     }
     LoggerHelper.getLocal().log(Level.INFO, "Done - modifyPropertyInYaml");
   }
-  
+
   /**
    * Get runtime server yaml file and verify the changed property is in that file.
    *
@@ -1421,7 +1421,7 @@ public class Domain {
             secret.getSecretName(), domainUid, domainNS);
     TestUtils.exec(labelCmd);
   }
-  
+
   /**
    * Create Docker Registry Secret for the domain namespace.
    *
@@ -1432,7 +1432,7 @@ public class Domain {
     if (secret == null) {
       secret = "docker-store";
     }
-    
+
     String ocrserver = System.getenv("OCR_SERVER");
     if (ocrserver == null) {
       ocrserver = "container-registry.oracle.com";
@@ -1506,7 +1506,7 @@ public class Domain {
     }
     String outputStr = result.stdout().trim();
     LoggerHelper.getLocal().log(Level.INFO, "Command returned " + outputStr);
-  
+
     // for remote k8s cluster and domain in image case, push the domain image to OCIR
     if (domainMap.containsKey("domainHomeImageBase") && BaseTest.SHARED_CLUSTER) {
       String image = (String)domainMap.get("image");
@@ -1514,7 +1514,7 @@ public class Domain {
 
       // create ocir registry secret in the same ns as domain which is used while pulling the domain
       // image
-      
+
       TestUtils.createDockerRegistrySecret(
           "ocir-domain",
           System.getenv("REPO_REGISTRY"),
@@ -1679,6 +1679,7 @@ public class Domain {
    *                   accessed to read or if creating config map or secret fails for configoverrides
    */
   protected void initialize(Map<String, Object> inputDomainMap) throws Exception {
+    LoggerHelper.getLocal().log(Level.INFO, "initialize BEGIN: MAP VALUES " + domainMap.toString());
     imageTag = BaseTest.getWeblogicImageTag();
     imageName = BaseTest.getWeblogicImageName();
     domainMap = inputDomainMap;
@@ -1827,10 +1828,11 @@ public class Domain {
 
     // create config map and secret for custom sit config
     createConfigMapAndSecretForSitConfig();
-    
+
     if (!domainMap.containsKey("domainHomeImageBase")) {
       createDockerRegistrySecret();
     }
+    LoggerHelper.getLocal().log(Level.INFO, "initialize END: MAP VALUES " + domainMap.toString());
   }
 
   private void checkModelInImageAttributes() {

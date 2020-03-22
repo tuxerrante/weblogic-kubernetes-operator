@@ -1,5 +1,6 @@
 // Copyright (c) 2020, Oracle Corporation and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 package oracle.kubernetes.operator;
 
 import java.nio.charset.Charset;
@@ -306,6 +307,7 @@ public class ItModelInImage extends BaseTest {
       domainMap.put("namespace", domainNS);
       domainMap.put("wdtModelFile", "./model.wls.yaml");
       domainMap.put("wdtModelPropertiesFile", "./model.properties");
+      LoggerHelper.getLocal().log(Level.INFO, "testCredentialsChange: MAP VALUES " + domainMap.toString());
 
       domain = TestUtils.createDomain(domainMap);
       // domain = new Domain(domainMap, true, false);
