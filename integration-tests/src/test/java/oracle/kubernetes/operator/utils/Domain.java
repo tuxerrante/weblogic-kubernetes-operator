@@ -1679,10 +1679,10 @@ public class Domain {
    *                   accessed to read or if creating config map or secret fails for configoverrides
    */
   protected void initialize(Map<String, Object> inputDomainMap) throws Exception {
-    LoggerHelper.getLocal().log(Level.INFO, "initialize BEGIN: MAP VALUES " + domainMap.toString());
     imageTag = BaseTest.getWeblogicImageTag();
     imageName = BaseTest.getWeblogicImageName();
     domainMap = inputDomainMap;
+    LoggerHelper.getLocal().log(Level.INFO, "initialize BEGIN: MAP VALUES " + domainMap.toString());
     userProjectsDir = (String) domainMap.get("userProjectsDir");
     resultsDir = (String) domainMap.get("resultDir");
     pvRoot = (String) domainMap.get("pvRoot");
