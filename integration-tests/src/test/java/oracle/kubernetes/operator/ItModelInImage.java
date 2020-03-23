@@ -324,8 +324,8 @@ public class ItModelInImage extends BaseTest {
           + "-weblogic-credentials --ignore-not-found");
       TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  create secret generic " + domain.getDomainUid()
           + "-weblogic-credentials --from-literal=username=system --from-literal=password=gumby1234 ");
-      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  label secret sample-domain1-weblogic-credentials "
-          + "weblogic.domainUID=" + (String) domainMap.get("domainUID"));
+      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  label secret " + domain.getDomainUid()
+          + "-weblogic-credentials weblogic.domainUID=" + (String) domainMap.get("domainUID"));
 
       String originalYaml
           = getUserProjectsDir()
