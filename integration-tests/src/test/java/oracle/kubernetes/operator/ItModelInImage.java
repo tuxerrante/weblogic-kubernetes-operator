@@ -322,8 +322,8 @@ public class ItModelInImage extends BaseTest {
       TestUtils.kubectlexecNoCheck(domainNS, TESTWSAPP, TESTWEBAPP);
       TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  delete secret sample-domain1-weblogic-credentials "
           + "--ignore-not-found");
-      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  create secret generic --from-literal=username=system "
-          + "--from-literal=password=gumby1234 ");
+      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  create secret generic " + domain.getDomainUid()
+          + "-weblogic-credentials --from-literal=username=system --from-literal=password=gumby1234 ");
       TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  label secret sample-domain1-weblogic-credentials "
           + "weblogic.domainUID=" + (String) domainMap.get("domainUID"));
 
