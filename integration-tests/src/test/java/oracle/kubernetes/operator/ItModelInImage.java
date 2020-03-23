@@ -320,8 +320,8 @@ public class ItModelInImage extends BaseTest {
       // kubectl -n $NAMESPACE create secret generic $SECRET_NAME $LITERALS $FILENAMES
       // kubectl -n $NAMESPACE label  secret         $SECRET_NAME weblogic.domainUID=$DOMAIN_UID
       TestUtils.kubectlexecNoCheck(domainNS, TESTWSAPP, TESTWEBAPP);
-      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  delete secret sample-domain1-weblogic-credentials "
-          + "--ignore-not-found");
+      TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  delete secret " + domain.getDomainUid()
+          + "-weblogic-credentials --ignore-not-found");
       TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  create secret generic " + domain.getDomainUid()
           + "-weblogic-credentials --from-literal=username=system --from-literal=password=gumby1234 ");
       TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  label secret sample-domain1-weblogic-credentials "
