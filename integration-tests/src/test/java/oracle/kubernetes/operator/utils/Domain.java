@@ -1682,7 +1682,6 @@ public class Domain {
     imageTag = BaseTest.getWeblogicImageTag();
     imageName = BaseTest.getWeblogicImageName();
     domainMap = inputDomainMap;
-    LoggerHelper.getLocal().log(Level.INFO, "initialize BEGIN: MAP VALUES " + domainMap.toString());
     userProjectsDir = (String) domainMap.get("userProjectsDir");
     resultsDir = (String) domainMap.get("resultDir");
     pvRoot = (String) domainMap.get("pvRoot");
@@ -1832,7 +1831,6 @@ public class Domain {
     if (!domainMap.containsKey("domainHomeImageBase")) {
       createDockerRegistrySecret();
     }
-    LoggerHelper.getLocal().log(Level.INFO, "initialize END: MAP VALUES " + domainMap.toString());
   }
 
   private void checkModelInImageAttributes() {

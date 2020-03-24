@@ -349,7 +349,7 @@ public class ItModelInImage extends BaseTest {
       domain.verifyAdminServerRestarted();
       domain.verifyManagedServersRestarted();
       domain.verifyDomainCreated();
-      Thread.sleep(60*3*1000);
+      Thread.sleep(60 * 3 * 1000);
       // domain.verifyDomainRestarted();
       // testAdminT3Channel(domain, true);
       domain.verifyDomainCreated();

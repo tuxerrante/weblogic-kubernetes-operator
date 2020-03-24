@@ -201,7 +201,6 @@ public class TestUtils {
   public static void createInputFile(Map<String, Object> map, String generatedInputYamlFile)
       throws Exception {
     LoggerHelper.getLocal().log(Level.INFO, "Creating input yaml file at " + generatedInputYamlFile);
-    LoggerHelper.getLocal().log(Level.INFO, "Creating input yaml file with MAP VALUES " + map.toString());
 
     DumperOptions options = new DumperOptions();
     options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
