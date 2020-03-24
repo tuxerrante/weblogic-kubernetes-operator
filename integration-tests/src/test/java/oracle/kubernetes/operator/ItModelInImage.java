@@ -313,12 +313,6 @@ public class ItModelInImage extends BaseTest {
       // domain = new Domain(domainMap, true, false);
       domain.verifyDomainCreated();
       // testAdminT3Channel(domain, true);
-      // domain.undeployWebAppViaWlst(TESTWEBAPP, appLocationInPod);
-
-      // change the weblogic credentials via the
-      // kubectl -n $NAMESPACE delete secret         $SECRET_NAME --ignore-not-found
-      // kubectl -n $NAMESPACE create secret generic $SECRET_NAME $LITERALS $FILENAMES
-      // kubectl -n $NAMESPACE label  secret         $SECRET_NAME weblogic.domainUID=$DOMAIN_UID
       TestUtils.kubectlexecNoCheck(domainNS, TESTWSAPP, TESTWEBAPP);
       TestUtils.exec("kubectl -n " + domain.getDomainNs() + "  delete secret " + domain.getDomainUid()
           + "-weblogic-credentials --ignore-not-found");
@@ -352,6 +346,10 @@ public class ItModelInImage extends BaseTest {
       ExecResult exec = TestUtils.exec("kubectl apply -f " + path.toString());
       LoggerHelper.getLocal().log(Level.INFO, exec.stdout());
       LoggerHelper.getLocal().log(Level.INFO, "Verifying if the domain is restarted");
+      domain.verifyAdminServerRestarted();
+      domain.verifyManagedServersRestarted();
+      domain.verifyDomainCreated();
+      Thread.sleep(60*3*1000);
       // domain.verifyDomainRestarted();
       // testAdminT3Channel(domain, true);
       domain.verifyDomainCreated();
