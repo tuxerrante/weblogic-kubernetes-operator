@@ -128,7 +128,54 @@ public class ItModelInImageOverride extends MiiBaseTest {
 
       // update domain yaml with restartVersion and
       // apply the domain yaml, verify domain restarted
-      modifyDomainYamlWithRestartVersion();
+      modifyDomainYamlWithRestartVersion("v1.1");
+
+      // verify the test result by checking override config file on server pod
+      verifyJdbcOverride();
+
+      // verify the test result by getting JDBC DS props via WLST on server pod
+      Set<String> jdbcResourcesToVerify = new HashSet<String>();
+      // verify JDBC DS name and value of read timeout
+      jdbcResourcesToVerify.add("datasource.name.1=" + dsName);
+      jdbcResourcesToVerify.add("datasource.readTimeout.1=" + readTimeout_1);
+
+      verifyJdbcResources(jdbcResourcesToVerify);
+
+      testCompletedSuccessfully = true;
+    } finally {
+      if (domain != null && (JENKINS || testCompletedSuccessfully)) {
+        TestUtils.deleteWeblogicDomainResources(domain.getDomainUid());
+      }
+    }
+
+    LoggerHelper.getLocal().log(Level.INFO, "SUCCESS - " + testMethodName);
+  }
+
+  /**
+   * Create a domain using model in image and having configmap in the domain.yaml
+   * before deploying the domain. After deploying the domain crd,
+   * re-create the configmap with a model file that define a JDBC DataSource
+   * and update the domain crd to change domain restartVersion
+   * to reload the model, generate new config and initiate a rolling restart.
+   *
+   * @throws Exception exception
+   */
+  @Test
+  public void testMiiConfigAppDelete() throws Exception {
+    Assumptions.assumeTrue(QUICKTEST);
+    String testMethodName = new Object() {
+    }.getClass().getEnclosingMethod().getName();
+    logTestBegin(testMethodName);
+    LoggerHelper.getLocal().log(Level.INFO,
+        "Creating Domain & waiting for the script to complete execution");
+    boolean testCompletedSuccessfully = false;
+    try {
+      // override config
+      wdtConfigDeleteOverride();
+
+      // update domain yaml with restartVersion and
+      // apply the domain yaml, verify domain restarted
+      modifyDomainYamlWithRestartVersion("v1.2");
 
       // verify the test result by checking override config file on server pod
       verifyJdbcOverride();
@@ -194,7 +241,29 @@ public class ItModelInImageOverride extends MiiBaseTest {
     TestUtils.createConfigMap(cmName, destDir, domainNS, label);
   }
 
-  private void modifyDomainYamlWithRestartVersion()
+  private void wdtConfigDeleteOverride() throws Exception {
+    LoggerHelper.getLocal().log(Level.INFO, "Creating configMap");
+    String origDir = BaseTest.getProjectRoot()
+        + "/integration-tests/src/test/resources/model-in-image";
+    String origModelFile = origDir + "/model.jdbc.yaml";
+    String origPropFile = origDir + "/model.jdbc.properties";
+    String destDir = getResultDir() + "/samples/model-in-image-override";;
+    String destModelFile = destDir + "/model.jdbc_2.yaml";
+    String destPropFile = destDir + "/model.jdbc_2.properties";
+    Files.createDirectories(Paths.get(destDir));
+
+    TestUtils.copyFile(origModelFile, destModelFile);
+    TestUtils.copyFile(origPropFile, destPropFile);
+
+    // Re-create config map after deploying domain crd
+    final String domainUid = domain.getDomainUid();
+    final String cmName = domainUid + configMapSuffix;
+    final String label = "weblogic.domainUID=" + domainUid;
+
+    TestUtils.createConfigMap(cmName, destDir, domainNS, label);
+  }
+
+  private void modifyDomainYamlWithRestartVersion(String restartVersion)
       throws Exception {
     String originalYaml =
         getUserProjectsDir()
@@ -205,7 +274,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
     // Modify the original domain yaml to include restartVersion in admin server node
     DomainCrd crd = new DomainCrd(originalYaml);
     Map<String, String> objectNode = new HashMap();
-    objectNode.put("restartVersion", "v1.1");
+    objectNode.put("restartVersion", restartVersion);
     crd.addObjectNodeToDomain(objectNode);
     String modYaml = crd.getYamlTree();
     LoggerHelper.getLocal().log(Level.INFO, modYaml);
