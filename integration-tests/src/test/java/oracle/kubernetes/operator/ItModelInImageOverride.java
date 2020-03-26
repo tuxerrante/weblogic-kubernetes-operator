@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +29,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * This JUnit test is used for testing
@@ -37,6 +41,7 @@ import org.junit.jupiter.api.Test;
  * <p>This test is used for creating domain using model in image.
  */
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ItModelInImageOverride extends MiiBaseTest {
   private static Operator operator;
   private static Domain domain;
@@ -46,6 +51,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
   private static final String configMapSuffix = "-mii-config-map";
   private static final String jndiName = "jdbc/generic1";
   private static final String dsName = "MyDataSource";
+  private static final String appName = "myear";
   private static final String readTimeout_1 = "30001";
   private static final String readTimeout_2 = "30002";
 
@@ -111,6 +117,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception exception
    */
   @Test
+  @Order(1)
   public void testMiiOverrideNonExistJdbc() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -161,6 +168,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception exception
    */
   @Test
+  @Order(2)
   public void testMiiConfigAppDelete() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -177,16 +185,9 @@ public class ItModelInImageOverride extends MiiBaseTest {
       // apply the domain yaml, verify domain restarted
       modifyDomainYamlWithRestartVersion("v1.2");
 
-      // verify the test result by checking override config file on server pod
-      verifyJdbcOverride();
-
-      // verify the test result by getting JDBC DS props via WLST on server pod
-      Set<String> jdbcResourcesToVerify = new HashSet<String>();
-      // verify JDBC DS name and value of read timeout
-      jdbcResourcesToVerify.add("datasource.name.1=" + dsName);
-      jdbcResourcesToVerify.add("datasource.readTimeout.1=" + readTimeout_1);
-
-      verifyJdbcResources(jdbcResourcesToVerify);
+      // verify the test result by getting JDBC DS via WLST on server pod
+      String jdbcResources = getJdbcResources();
+      Assertions.assertFalse(jdbcResources.contains(dsName), dsName + " is found");
 
       testCompletedSuccessfully = true;
     } finally {
@@ -252,7 +253,12 @@ public class ItModelInImageOverride extends MiiBaseTest {
     String destPropFile = destDir + "/model.jdbc_2.properties";
     Files.createDirectories(Paths.get(destDir));
 
-    TestUtils.copyFile(origModelFile, destModelFile);
+    Path path = Paths.get(origModelFile);
+    Charset charset = StandardCharsets.UTF_8;
+    String content = new String(Files.readAllBytes(path), charset);
+    content = content.replaceAll(dsName, "!" + dsName);
+    content = content.replaceAll(appName, "!" + appName);
+    Files.write(Paths.get(destModelFile), content.getBytes(charset), StandardOpenOption.TRUNCATE_EXISTING);
     TestUtils.copyFile(origPropFile, destPropFile);
 
     // Re-create config map after deploying domain crd
