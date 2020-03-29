@@ -7,6 +7,8 @@ import java.util.HashMap;
 
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Helm.addRepo;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Helm.installRelease;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Helm.deleteRelease;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Helm.upgradeRelease;
 
 public class Operator {
 
@@ -27,11 +29,22 @@ public class Operator {
         boolean success = false;
         if (addRepo(OPERATOR_HELM_REPO_URL)) {
             success = installRelease(
-                    OPERATOR_CHART_NAME,
-                    "weblogic-operator",
-                    new HashMap<>());
+                OPERATOR_CHART_NAME,
+                "weblogic-operator",
+                new HashMap<>());
         }
         return success;
     }
 
+    public static boolean upgrade(HashMap<String, String> values) {
+        return upgradeRelease(OPERATOR_CHART_NAME, "weblogic-operator", values);
+    }
+
+    public static boolean scaleDomain(String domainUID, String clusterName, int numOfServers) {
+        return true;
+    }
+
+    public static boolean delete() {
+        return deleteRelease(OPERATOR_CHART_NAME);
+    }
 }
