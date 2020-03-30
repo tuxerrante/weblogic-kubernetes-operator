@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -381,7 +380,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
     String content = new String(Files.readAllBytes(path), charset);
     content = content.replaceAll(dsName, "!" + dsName);
     content = content.replaceAll(appName, "!" + appName);
-    Files.write(Paths.get(destModelFile), content.getBytes(charset), StandardOpenOption.TRUNCATE_EXISTING);
+    Files.write(Paths.get(destModelFile), content.getBytes(charset));
     TestUtils.copyFile(origPropFile, destPropFile);
 
     // Re-create config map after deploying domain crd
