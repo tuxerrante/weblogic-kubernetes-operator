@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static oracle.weblogic.kubernetes.actions.TestActions.createUniqueNamespace;
 import static oracle.weblogic.kubernetes.actions.TestActions.installOperator;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.operatorIsRunning;
 import static org.awaitility.Awaitility.with;
@@ -51,6 +52,7 @@ class ItSimpleOperatorValidation implements LoggedTest {
         // imagine that installOperator() will try to install the operator, by creating
         // the kubernetes deployment.  this will complete quickly, and will either be
         // successful or not.
+        String namespace = createUniqueNamespace();
         boolean success = installOperator();
         // we can use a standard JUnit assertion to check on the result
         assertEquals(true, success, "There MUST be a descriptive message here");
@@ -76,7 +78,7 @@ class ItSimpleOperatorValidation implements LoggedTest {
                 // and here we can set the maximum time we are prepared to wait
                 .await().atMost(5, MINUTES)
                 // operatorIsRunning() is one of our custom, reusable assertions
-                .until(operatorIsRunning());
+                .until(operatorIsRunning(namespace));
 
         // i have not done anything yet about reporting the reason for the failure :)
     }
