@@ -111,6 +111,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception if domain creation, config override or test veriofication fails
    */
   @Test
+  @Order(1)
   public void testMiiOverrideNonExistJdbc() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -165,6 +166,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception if domain creation, config override or test veriofication fails
    */
   @Test
+  @Order(2)
   public void testMiiOverrideExistJdbc() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -230,7 +232,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception exception
    */
   @Test
-  @Order(2)
+  @Order(3)
   public void testMiiConfigAppDelete() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
