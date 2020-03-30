@@ -241,6 +241,12 @@ public class ItModelInImageOverride extends MiiBaseTest {
       boolean createDS = true;
       createDomainUsingMii(createDS);
 
+      // verify that JDBC DS is created by checking JDBC DS name and read timeout
+      LoggerHelper.getLocal().log(Level.INFO, "Verify that JDBC DS is created");
+      Set<String> jdbcResourcesToVerify = new HashSet<String>();
+      jdbcResourcesToVerify.add("datasource.name.1=" + dsName);
+      jdbcResourcesToVerify.add("datasource.readTimeout.1=" + readTimeout_1);
+
       // override config
       wdtConfigDeleteOverride();
 
