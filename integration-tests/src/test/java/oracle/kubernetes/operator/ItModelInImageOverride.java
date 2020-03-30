@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -110,7 +109,6 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception if domain creation, config override or test veriofication fails
    */
   @Test
-  @Order(1)
   public void testMiiOverrideNonExistJdbc() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -165,7 +163,6 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception if domain creation, config override or test veriofication fails
    */
   @Test
-  @Order(2)
   public void testMiiOverrideExistJdbc() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -231,7 +228,6 @@ public class ItModelInImageOverride extends MiiBaseTest {
    * @throws Exception exception
    */
   @Test
-  @Order(3)
   public void testMiiConfigAppDelete() throws Exception {
     Assumptions.assumeTrue(QUICKTEST);
     String testMethodName = new Object() {
@@ -241,6 +237,10 @@ public class ItModelInImageOverride extends MiiBaseTest {
         "Creating Domain & waiting for the script to complete execution");
     boolean testCompletedSuccessfully = false;
     try {
+      // create Domain w JDBC DS using the image created by MII
+      boolean createDS = true;
+      createDomainUsingMii(createDS);
+
       // override config
       wdtConfigDeleteOverride();
 
