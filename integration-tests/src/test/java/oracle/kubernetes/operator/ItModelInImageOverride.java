@@ -244,6 +244,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
       // verify that JDBC DS is created by checking JDBC DS name and read timeout
       // verify the test result by checking override config file on server pod
       verifyJdbcOverride();
+      Assertions.assertTrue(verifyApp().contains("Hello"), "Application is not found");
 
       // override config
       wdtConfigDeleteOverride();
@@ -256,6 +257,9 @@ public class ItModelInImageOverride extends MiiBaseTest {
       String destDir = getResultDir() + "/samples/model-in-image-override";
       String jdbcResources = getJdbcResources(destDir);
       Assertions.assertFalse(jdbcResources.contains(dsName), dsName + " is found");
+
+      // verify the app access returns 404
+      Assertions.assertFalse(verifyApp().contains("Hello"), "Application is found");
 
       testCompletedSuccessfully = true;
     } finally {
@@ -393,6 +397,29 @@ public class ItModelInImageOverride extends MiiBaseTest {
     final String label = "weblogic.domainUID=" + domainUid;
 
     TestUtils.createConfigMap(cmName, destDir, domainNS, label);
+  }
+
+  private String verifyApp() throws Exception {
+    // get managed server pod name
+    StringBuffer cmdStrBuff = new StringBuffer();
+    cmdStrBuff
+      .append("kubectl get pod -n ")
+      .append(domainNS)
+      .append(" -o=jsonpath='{.items[1].metadata.name}' | grep managed-server1");
+    String msPodName = TestUtils.exec(cmdStrBuff.toString()).stdout();
+
+    // access the application deployed in managed-server1
+    cmdStrBuff = new StringBuffer();
+    cmdStrBuff
+      .append("kubectl -n ")
+      .append(domainNS)
+      .append(" exec -it ")
+      .append(msPodName)
+      .append(" -- bash -c")
+      .append("'curl http://'" + msPodName + ":8001/sample_war/")
+      .append("'");
+    ExecResult exec = TestUtils.exec(cmdStrBuff.toString(), true);
+    return exec.stdout();
   }
 
   private void verifyJdbcResources(Set<String> jdbcResourcesSet, String destDir) throws Exception {
