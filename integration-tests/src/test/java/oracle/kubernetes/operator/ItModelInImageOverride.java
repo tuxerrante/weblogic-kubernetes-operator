@@ -220,33 +220,35 @@ public class ItModelInImageOverride extends MiiBaseTest {
 
   /**
    * Create a domain using model in image and having configmap in the domain.yaml
-   * before deploying the domain. After deploying the domain crd,
-   * re-create the configmap with a model file that define a JDBC DataSource
-   * and update the domain crd to change domain restartVersion
-   * to reload the model, generate new config and initiate a rolling restart.
+   * The model file has predeployed application and a JDBC DataSource. After deploying
+   * the domain crd, re-create the configmap with a model file that removes the JDBC
+   * and application through the ! notation and update the domain crd to change domain
+   * restartVersion to reload the model, generate new config and initiate a rolling restart.
+   * Verify the JDBC DataSource and application no longer exists in the WebLogic domain.
    *
-   * @throws Exception exception
+   * @throws Exception when test fails
    */
   @Test
   public void testMiiConfigAppDelete() throws Exception {
-    Assumptions.assumeTrue(QUICKTEST);
+    Assumptions.assumeTrue(FULLTEST);
     String testMethodName = new Object() {
     }.getClass().getEnclosingMethod().getName();
     logTestBegin(testMethodName);
-    LoggerHelper.getLocal().log(Level.INFO,
-        "Creating Domain & waiting for the script to complete execution");
     boolean testCompletedSuccessfully = false;
     try {
-      // create Domain w JDBC DS using the image created by MII
+      // create Domain with JDBC DataSource and application using the image created by MII
+      LoggerHelper.getLocal().log(Level.INFO,
+        "Creating Domain & waiting for the script to complete execution");
       boolean createDS = true;
       createDomainUsingMii(createDS);
 
       // verify that JDBC DS is created by checking JDBC DS name and read timeout
       // verify the test result by checking override config file on server pod
+      // verify that application is accessible from inside the managed server pod
       verifyJdbcOverride();
       Assertions.assertTrue(verifyApp().contains("Hello"), "Application is not found");
 
-      // override config
+      // delete config and application using new model file
       wdtConfigDeleteOverride();
 
       // update domain yaml with restartVersion and
@@ -386,6 +388,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
     Path path = Paths.get(origModelFile);
     Charset charset = StandardCharsets.UTF_8;
     String content = new String(Files.readAllBytes(path), charset);
+    // prefix the JDBC DataSource and application name with !
     content = content.replaceAll(dsName, "!" + dsName);
     content = content.replaceAll(appName, "!" + appName);
     Files.write(Paths.get(destModelFile), content.getBytes(charset));
