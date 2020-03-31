@@ -415,8 +415,8 @@ public class ItModelInImageOverride extends MiiBaseTest {
         .append(domainNS)
         .append(" exec -it ")
         .append(msPodName)
-        .append(" -- bash -c")
-        .append("'curl http://'" + msPodName + ":8001/sample_war/")
+        .append(" -- bash -c ")
+        .append("'curl http://" + msPodName + ":8001/sample_war/")
         .append("'");
     ExecResult exec = TestUtils.exec(cmdStrBuff.toString(), true);
     return exec.stdout();
