@@ -403,21 +403,21 @@ public class ItModelInImageOverride extends MiiBaseTest {
     // get managed server pod name
     StringBuffer cmdStrBuff = new StringBuffer();
     cmdStrBuff
-      .append("kubectl get pod -n ")
-      .append(domainNS)
-      .append(" -o=jsonpath='{.items[1].metadata.name}' | grep managed-server1");
+        .append("kubectl get pod -n ")
+        .append(domainNS)
+        .append(" -o=jsonpath='{.items[1].metadata.name}' | grep managed-server1");
     String msPodName = TestUtils.exec(cmdStrBuff.toString()).stdout();
 
     // access the application deployed in managed-server1
     cmdStrBuff = new StringBuffer();
     cmdStrBuff
-      .append("kubectl -n ")
-      .append(domainNS)
-      .append(" exec -it ")
-      .append(msPodName)
-      .append(" -- bash -c")
-      .append("'curl http://'" + msPodName + ":8001/sample_war/")
-      .append("'");
+        .append("kubectl -n ")
+        .append(domainNS)
+        .append(" exec -it ")
+        .append(msPodName)
+        .append(" -- bash -c")
+        .append("'curl http://'" + msPodName + ":8001/sample_war/")
+        .append("'");
     ExecResult exec = TestUtils.exec(cmdStrBuff.toString(), true);
     return exec.stdout();
   }
