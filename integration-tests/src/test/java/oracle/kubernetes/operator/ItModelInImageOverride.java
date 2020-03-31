@@ -238,7 +238,7 @@ public class ItModelInImageOverride extends MiiBaseTest {
     try {
       // create Domain with JDBC DataSource and application using the image created by MII
       LoggerHelper.getLocal().log(Level.INFO,
-        "Creating Domain & waiting for the script to complete execution");
+          "Creating Domain & waiting for the script to complete execution");
       boolean createDS = true;
       createDomainUsingMii(createDS);
 
