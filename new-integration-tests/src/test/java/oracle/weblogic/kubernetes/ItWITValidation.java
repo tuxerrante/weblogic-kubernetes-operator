@@ -3,6 +3,8 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.util.ArrayList;
+
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.extensions.LoggedTest;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +15,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayName("Simple validation of basic WIT functions")
 class ItWITValidation implements LoggedTest {
+  private static final String TEST_MODEL_DIR =
+      System.getProperty("user.dir") + "/src/test/resources/models/";
+  
+  private static final String WDT_MODEL_FILE = "model1-wls.yaml";
+  private static final String WDT_PROPERIES_FILE = "model1-10.properties"
+		  
   @Test
   @DisplayName("Create a MII image")
   public void testCreatingMIIImage() {
@@ -35,8 +43,20 @@ class ItWITValidation implements LoggedTest {
 
     // create the MII image
     // TODO add model files and other contents to the image once we have those resources
-    boolean success = TestActions.createMIIImage(withWITParams());
+
+    logger.info("Model dir = " + TEST_MODEL_DIR);
+    ArrayList<String> modelVariableList = new ArrayList();
+    modelVariableList.add(TEST_MODEL_DIR + WDT_PROPERIES_FILE);
+     
+    ArrayList<String> modelList = new ArrayList();
+    modelList.add(TEST_MODEL_DIR + WDT_MODEL_FILE);
+
+    boolean success = TestActions.createMIIImage(
+        withWITParams()
+            .modelFiles(modelList)
+            .modelVariableFiles(modelVariableList));
 
     assertEquals(true, success, "Failed to create the image using WebLogic Deploy Tool");
   } 
 }
+

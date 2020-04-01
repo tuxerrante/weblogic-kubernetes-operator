@@ -54,6 +54,7 @@ public class WebLogicImageTool extends InstallWITCommon {
         + " --tag " + params.modelImageName() + ":" + params.modelImageTag()
         + " --fromImage " + params.baseImageName() + ":" + params.baseImageTag()
         + " --wdtDomainType " + params.domainType()
+        + " --path " + WORK_DIR + "/download/" + InstallParams.WDT_FILE_NAME
         + " --wdtModelOnly ";
   
     if (params.modelFiles() != null && params.modelFiles().size() != 0) {
