@@ -49,16 +49,22 @@ public class ActionImplCommon {
     }
   }
   */
+
+  protected boolean executeAndVerify(String command) {
+    return executeAndVerify(command, false /* do not redirect the output */);
+  }
   
   protected boolean executeAndVerify(String command, boolean redirectOutput) {
-    logger.info("Executing command = " + command);
+    logger.info("Executing command " + command);
     try {
       ExecResult result = ExecCommand.exec(command, redirectOutput);
       return result.exitValue() == 0;
     } catch (IOException ioe) {
+      ioe.printStackTrace();
       logger.warning("Failed too run the command due to " + ioe.getMessage());
       return false;
     } catch (InterruptedException ie) {
+      ie.printStackTrace();
       logger.warning("Failed too run the command due to " + ie.getMessage());
       return false;
     }

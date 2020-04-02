@@ -39,22 +39,34 @@ public class WebLogicImageTool extends InstallWITCommon {
    */
   public boolean updateImage() {
     try {
+      // delete the old cache entry for the WDT installer
+      if (!deleteEntry()) {
+        logger.warning("Failed to delete cache entry in WebLogic Image Tool");
+        return false;
+      }
+ 
+      // add the cache entry for the WDT installer
+      if (!addInstaller()) {
+        logger.warning("Failed to add installer to WebLogic Image Tool");
+        return false;
+      }
+  
+      // check if the file exists, throws FileNotFoundException if the file does not exist
       checkFile(IMAGE_TOOL);
     } catch (FileNotFoundException fnfe) {
-      logger.warning("Failed to create an image due to " + fnfe.getMessage());
+      logger.warning("Failed to create an image due to Exception: " + fnfe.getMessage());
       return false;
     }
-    return executeAndVerify(buildCommand(), params.redirect());
+    return executeAndVerify(buildUpdateCommand(), params.redirect());
   }
   
-  private String buildCommand() {
+  private String buildUpdateCommand() {
     String command = 
         IMAGE_TOOL 
         + " update "
         + " --tag " + params.modelImageName() + ":" + params.modelImageTag()
         + " --fromImage " + params.baseImageName() + ":" + params.baseImageTag()
         + " --wdtDomainType " + params.domainType()
-        + " --path " + WORK_DIR + "/download/" + InstallParams.WDT_FILE_NAME
         + " --wdtModelOnly ";
   
     if (params.modelFiles() != null && params.modelFiles().size() != 0) {
@@ -88,4 +100,35 @@ public class WebLogicImageTool extends InstallWITCommon {
     }
     return strList;
   }
+  
+  /**
+   * Add WDT installer to the WebLogic Image Tool cache
+   * @return true if the command succeeds 
+   */
+  public boolean addInstaller() throws FileNotFoundException {
+    try {
+      checkFile(WDT_ZIP);
+    } catch (FileNotFoundException fnfe) {
+      logger.warning("Failed to create an image due to Exception: " + fnfe.getMessage());
+      throw fnfe;
+    }
+    return executeAndVerify(
+        IMAGE_TOOL 
+        + " cache addInstaller "
+        + " --type wdt"
+        + " --version " + params.wdtVersion()
+        + " --path " + WDT_ZIP);
+  }
+  
+  /**
+   * Delete the WDT installer cache entry from the WebLogic Image Tool
+   * @return true if the command succeeds
+   */
+  public boolean deleteEntry() {
+    return executeAndVerify(
+        IMAGE_TOOL 
+        + " cache deleteEntry "
+        + "--key " + "wdt_" + params.wdtVersion());
+  }
+
 }

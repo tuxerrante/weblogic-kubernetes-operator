@@ -41,7 +41,7 @@ public class WITParams {
   // A comma separated list of the names of the WDT model properties files
   private List<String> modelVariableFiles;
   
-  // A comma separated list of the names of the WDT model achieve files
+  // A comma separated list of the names of the WDT model achieve files, such as apps
   private List<String> modelArchiveFiles;
   
   // The version of WDT
