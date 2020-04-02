@@ -28,7 +28,11 @@ public class WebLogicImageTool extends InstallWITCommon {
    * Set up the WIT with customized parameters
    * @return the instance of WIT 
    */
-  public WebLogicImageTool with(WITParams params) {
+  public static WebLogicImageTool withParams(WITParams params) {
+    return new WebLogicImageTool().with(params);
+  }
+  
+  private WebLogicImageTool with(WITParams params) {
     this.params = params;
     return this;
   }
@@ -38,6 +42,18 @@ public class WebLogicImageTool extends InstallWITCommon {
    * @return true if the command succeeds 
    */
   public boolean updateImage() {
+    // download WIT if it is not in the expected location 
+    if (!downloadWIT()) {
+      logger.warning("Failed to download or unzip WebLogic Image Tool");
+      return false;
+    } 
+   
+    // download WDT if it is not in the expected location 
+    if (!downloadWDT()) {
+      logger.warning("Failed to download WebLogic Deploy Tool");
+      return false;
+    } 
+
     try {
       // delete the old cache entry for the WDT installer
       if (!deleteEntry()) {
@@ -57,10 +73,31 @@ public class WebLogicImageTool extends InstallWITCommon {
       logger.warning("Failed to create an image due to Exception: " + fnfe.getMessage());
       return false;
     }
-    return executeAndVerify(buildUpdateCommand(), params.redirect());
+  
+    return executeAndVerify(buildCommand(), params.redirect());
   }
   
-  private String buildUpdateCommand() {
+  private boolean downloadWIT() {
+    // install WIT if needed
+    return new Installer()
+        .with(new InstallParams()
+            .type(InstallParams.WIT_TYPE)
+            .verify(true)
+            .unzip(true))
+        .download();
+  }
+  
+  private boolean downloadWDT() {
+    // install WDT if needed
+    return new Installer()
+        .with(new InstallParams()
+            .type(InstallParams.WDT_TYPE)
+            .verify(true)
+            .unzip(false))
+        .download();
+  } 
+  
+  private String buildCommand() {
     String command = 
         IMAGE_TOOL 
         + " update "
