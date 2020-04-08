@@ -45,6 +45,7 @@ import static oracle.kubernetes.operator.helpers.Matchers.hasEnvVar;
 import static oracle.kubernetes.operator.logging.MessageKeys.JOB_CREATED;
 import static oracle.kubernetes.operator.logging.MessageKeys.JOB_DELETED;
 import static oracle.kubernetes.operator.logging.MessageKeys.NO_CLUSTER_IN_DOMAIN;
+import static oracle.kubernetes.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.utils.LogMatcher.containsWarning;
 import static oracle.kubernetes.weblogic.domain.model.ConfigurationConstants.START_NEVER;
@@ -92,7 +93,7 @@ public class DomainIntrospectorJobTest {
     mementos.add(
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, getMessageKeys())
-            .withLogLevel(Level.INFO));
+            .withLogLevel(Level.FINE));
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
     mementos.add(ScanCacheStub.install());
@@ -172,7 +173,7 @@ public class DomainIntrospectorJobTest {
     testSupport.runSteps(getStepFactory(), terminalStep);
 
     assertThat(logRecords, containsInfo(getJobCreatedMessageKey()));
-    assertThat(logRecords, containsInfo(getJobDeletedMessageKey()));
+    assertThat(logRecords, containsFine(getJobDeletedMessageKey()));
   }
 
   private static WlsDomainConfig createDomainConfig(String clusterName) {
@@ -268,7 +269,7 @@ public class DomainIntrospectorJobTest {
     testSupport.runSteps(getStepFactory(), terminalStep);
 
     assertThat(logRecords, containsInfo(getJobCreatedMessageKey()));
-    assertThat(logRecords, containsInfo(getJobDeletedMessageKey()));
+    assertThat(logRecords, containsFine(getJobDeletedMessageKey()));
     assertThat(logRecords, containsWarning(getNoClusterInDomainMessageKey()));
   }
 

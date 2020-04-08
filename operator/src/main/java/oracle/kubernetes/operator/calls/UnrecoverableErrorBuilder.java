@@ -24,14 +24,15 @@ public class UnrecoverableErrorBuilder {
 
   /**
    * Populate FailureStatusSource from an ApiException.
-   * @param apiException the source exception
+   * @param callResponse the failed call response
    * @return status source object
    */
-  public static FailureStatusSource fromException(ApiException apiException) {
+  public static FailureStatusSource fromFailedCall(CallResponse callResponse) {
+    ApiException apiException = callResponse.getE();
     if (UnprocessableEntityBuilder.isUnprocessableEntity(apiException)) {
-      return UnprocessableEntityBuilder.fromException(apiException);
+      return UnprocessableEntityBuilder.fromFailedCall(callResponse);
     } else {
-      return ForbiddenErrorBuilder.fromException(apiException);
+      return ForbiddenErrorBuilder.fromFailedCall(callResponse);
     }
   }
 }

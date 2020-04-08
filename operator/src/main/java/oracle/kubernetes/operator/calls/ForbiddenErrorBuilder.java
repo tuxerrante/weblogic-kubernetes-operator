@@ -15,7 +15,10 @@ public class ForbiddenErrorBuilder implements FailureStatusSource {
 
   private final String message;
 
-  private ForbiddenErrorBuilder(ApiException e) {
+  private ForbiddenErrorBuilder(CallResponse callResponse) {
+
+    // FIXME: build message including details of request
+
     this.message = e.getMessage();
   }
 
@@ -24,16 +27,17 @@ public class ForbiddenErrorBuilder implements FailureStatusSource {
   }
 
   /**
-   * Create a ForbiddenErrorBuilder from the provided Exception.
-   * @param exception the exception
+   * Create a ForbiddenErrorBuilder from the provided failed call.
+   * @param callResponse the failed call
    * @return the ForbiddenErrorBuilder
    */
-  public static ForbiddenErrorBuilder fromException(ApiException exception) {
-    if (!isForbiddenOperation(exception)) {
+  public static ForbiddenErrorBuilder fromFailedCall(CallResponse callResponse) {
+    ApiException apiException = callResponse.getE();
+    if (!isForbiddenOperation(apiException)) {
       throw new IllegalArgumentException("Is not forbidden exception");
     }
 
-    return new ForbiddenErrorBuilder(exception);
+    return new ForbiddenErrorBuilder(callResponse);
   }
 
   @Override

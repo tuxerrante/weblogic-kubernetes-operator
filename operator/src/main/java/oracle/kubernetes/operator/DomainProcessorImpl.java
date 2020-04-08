@@ -252,7 +252,7 @@ public class DomainProcessorImpl implements DomainProcessor {
       case "DELETED":
         boolean removed = info.deleteServerPodFromEvent(serverName, pod);
         if (removed && info.isNotDeleting() && !info.isServerPodBeingDeleted(serverName)) {
-          LOGGER.info(MessageKeys.POD_DELETED, domainUid, getNamespace(pod), serverName);
+          LOGGER.fine(MessageKeys.POD_DELETED, domainUid, getNamespace(pod), serverName);
           makeRightDomainPresence(info, true, false, true);
         }
         break;
@@ -383,19 +383,19 @@ public class DomainProcessorImpl implements DomainProcessor {
       case "ADDED":
         d = item.object;
         domainUid = d.getDomainUid();
-        LOGGER.info(MessageKeys.WATCH_DOMAIN, domainUid);
+        LOGGER.fine(MessageKeys.WATCH_DOMAIN, domainUid);
         makeRightDomainPresence(new DomainPresenceInfo(d), true, false, true);
         break;
       case "MODIFIED":
         d = item.object;
         domainUid = d.getDomainUid();
-        LOGGER.info(MessageKeys.WATCH_DOMAIN, domainUid);
+        LOGGER.fine(MessageKeys.WATCH_DOMAIN, domainUid);
         makeRightDomainPresence(new DomainPresenceInfo(d), false, false, true);
         break;
       case "DELETED":
         d = item.object;
         domainUid = d.getDomainUid();
-        LOGGER.info(MessageKeys.WATCH_DOMAIN_DELETED, domainUid);
+        LOGGER.fine(MessageKeys.WATCH_DOMAIN_DELETED, domainUid);
         makeRightDomainPresence(new DomainPresenceInfo(d), true, true, true);
         break;
 
@@ -447,6 +447,9 @@ public class DomainProcessorImpl implements DomainProcessor {
 
                           @Override
                           public void onThrowable(Packet packet, Throwable throwable) {
+
+                            // FIXME: need exception here that caputres how I want to log failed async calls
+
                             LOGGER.severe(MessageKeys.EXCEPTION, throwable);
                             loggingFilter.setFiltering(true);
                           }

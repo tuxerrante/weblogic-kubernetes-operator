@@ -126,7 +126,7 @@ public class DomainStatusUpdater {
    * @return Step
    */
   public static Step createFailedStep(CallResponse<?> callResponse, Step next) {
-    FailureStatusSource failure = UnrecoverableErrorBuilder.fromException(callResponse.getE());
+    FailureStatusSource failure = UnrecoverableErrorBuilder.fromFailedCall(callResponse);
     return createFailedStep(failure.getReason(), failure.getMessage(), next);
   }
 
@@ -178,7 +178,7 @@ public class DomainStatusUpdater {
     private Step createDomainStatusPatchStep(DomainStatusUpdaterContext context, DomainStatus newStatus) {
       JsonPatchBuilder builder = Json.createPatchBuilder();
       newStatus.createPatchFrom(builder, context.getStatus());
-      LOGGER.info(MessageKeys.DOMAIN_STATUS, context.getDomainUid(), newStatus);
+      LOGGER.fine(MessageKeys.DOMAIN_STATUS, context.getDomainUid(), newStatus);
 
       return new CallBuilder().patchDomainAsync(
             context.getDomainName(),
@@ -216,6 +216,8 @@ public class DomainStatusUpdater {
     }
 
     private boolean isPatchFailure(CallResponse<Domain> callResponse) {
+
+      // HERE, FIXME
       return callResponse.getStatusCode() == HTTP_INTERNAL_ERROR;
     }
 
