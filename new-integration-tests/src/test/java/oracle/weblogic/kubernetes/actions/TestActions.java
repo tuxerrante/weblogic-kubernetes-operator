@@ -8,6 +8,8 @@ import java.util.List;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ServiceAccount;
+import oracle.weblogic.kubernetes.actions.impl.AppBuilder;
+import oracle.weblogic.kubernetes.actions.impl.AppParams;
 import oracle.weblogic.kubernetes.actions.impl.ConfigMap;
 import oracle.weblogic.kubernetes.actions.impl.Domain;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
@@ -370,6 +372,30 @@ public class TestActions {
     return Helm.list(params);
   }
 
+  // ------------------------ Application Builder  -------------------------
+
+  /**
+   * Create an AppParams instance that contains the parameters for an application
+   *
+   * @return an instance of AppParams that contains the default values
+   */
+  public static AppParams withAppParams() {
+    return
+       AppBuilder.defaultAppParams();
+  }
+
+  /**
+   * Create an image using WDT models using WebLogic Image Tool
+   *
+   * @param params - the parameters for creating a model-in-image Docker image
+   * @return true if the operation succeeds
+   */
+  public static boolean buildAppArchive(AppParams params) {
+    return
+        AppBuilder
+            .withParams(params)
+            .build();
+  }
   // ------------------------ where does this go  -------------------------
 
   /**
