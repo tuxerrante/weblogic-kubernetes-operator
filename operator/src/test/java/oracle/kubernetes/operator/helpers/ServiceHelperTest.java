@@ -301,7 +301,7 @@ public class ServiceHelperTest extends ServiceHelperTestBase {
   @Test
   public void onFailedRun_reportFailure() {
     testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnResource(SERVICE, testFacade.getServiceName(), NS, 401);
+    testSupport.failOnResource(SERVICE, testFacade.getServiceName(), NS, 500);
 
     runServiceHelper();
 

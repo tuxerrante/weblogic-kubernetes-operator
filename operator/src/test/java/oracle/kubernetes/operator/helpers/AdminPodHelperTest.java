@@ -176,10 +176,10 @@ public class AdminPodHelperTest extends PodHelperTestBase {
   }
 
   @Test
-  public void whenAdminPodReplacementFails_unrecoverableFailureOnUnauthorized() {
+  public void whenAdminPodReplacementFails() {
     testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
-    testSupport.failOnCreate(KubernetesTestSupport.POD, getPodName(), NS, 401);
+    testSupport.failOnCreate(KubernetesTestSupport.POD, getPodName(), NS, 500);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
     Step initialStep = stepFactory.createStepList(terminalStep);

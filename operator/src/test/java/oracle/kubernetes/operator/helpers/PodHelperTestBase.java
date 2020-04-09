@@ -906,9 +906,9 @@ public abstract class PodHelperTestBase {
   }
 
   @Test
-  public void whenNoPod_unrecoverableFailureOnUnauthorized() {
+  public void whenNoPod_onFivehundred() {
     testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(KubernetesTestSupport.POD, getPodName(), NS, 401);
+    testSupport.failOnCreate(KubernetesTestSupport.POD, getPodName(), NS, 500);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
     Step initialStep = stepFactory.createStepList(terminalStep);

@@ -83,7 +83,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
     this.fieldSelector = fieldSelector;
     this.labelSelector = labelSelector;
     this.resourceVersion = resourceVersion;
-    next.setPrevious(this);
+    next.setPrevious(this); // FIXME
   }
 
   private static String accessContinue(Object result) {
