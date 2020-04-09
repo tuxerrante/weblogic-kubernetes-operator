@@ -11,13 +11,13 @@ import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.meterware.simplestub.Memento;
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1SecretReference;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
+import oracle.kubernetes.operator.calls.FailureStatusSourceException;
 import oracle.kubernetes.operator.calls.unprocessable.UnprocessableEntityBuilder;
 import oracle.kubernetes.operator.rest.ScanCacheStub;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
@@ -197,7 +197,7 @@ public class DomainIntrospectorJobTest {
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
-    testSupport.verifyCompletionThrowable(ApiException.class);
+    testSupport.verifyCompletionThrowable(FailureStatusSourceException.class);
   }
 
   @Test
@@ -242,7 +242,8 @@ public class DomainIntrospectorJobTest {
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
-    assertThat(getDomain(), hasStatus("FieldValueNotFound", "Test this failure"));
+    assertThat(getDomain(), hasStatus("FieldValueNotFound",
+        "testcall in namespace junit, for testName: Test this failure"));
   }
 
   Domain getDomain() {

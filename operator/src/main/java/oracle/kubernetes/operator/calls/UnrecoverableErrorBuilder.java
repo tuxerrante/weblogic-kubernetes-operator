@@ -19,11 +19,11 @@ public class UnrecoverableErrorBuilder {
   }
 
   private static boolean isUnrecoverable(ApiException e) {
-    return ForbiddenErrorBuilder.isForbiddenOperation(e) || UnprocessableEntityBuilder.isUnprocessableEntity(e);
+    return OtherUnrecoverableErrorBuilder.isUnrecoverable(e) || UnprocessableEntityBuilder.isUnprocessableEntity(e);
   }
 
   /**
-   * Populate FailureStatusSource from an ApiException.
+   * Populate FailureStatusSource from a failed call response.
    * @param callResponse the failed call response
    * @return status source object
    */
@@ -32,7 +32,17 @@ public class UnrecoverableErrorBuilder {
     if (UnprocessableEntityBuilder.isUnprocessableEntity(apiException)) {
       return UnprocessableEntityBuilder.fromFailedCall(callResponse);
     } else {
-      return ForbiddenErrorBuilder.fromFailedCall(callResponse);
+      return OtherUnrecoverableErrorBuilder.fromFailedCall(callResponse);
     }
+  }
+
+  /**
+   * Throws FailureStatusSourceException generated from a failed call response.
+   * @param callResponse the failed call response
+   * @return exception bearing status source object
+   */
+  public static FailureStatusSourceException createExceptionFromFailedCall(CallResponse callResponse) {
+    ApiException apiException = callResponse.getE();
+    return new FailureStatusSourceException(fromFailedCall(callResponse), apiException);
   }
 }

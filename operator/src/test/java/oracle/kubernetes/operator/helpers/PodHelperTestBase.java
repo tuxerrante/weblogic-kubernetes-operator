@@ -50,6 +50,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.VersionConstants;
+import oracle.kubernetes.operator.calls.FailureStatusSourceException;
 import oracle.kubernetes.operator.calls.unprocessable.UnprocessableEntityBuilder;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
@@ -444,7 +445,8 @@ public abstract class PodHelperTestBase {
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
-    assertThat(getDomain(), hasStatus("FieldValueNotFound", "Test this failure"));
+    assertThat(getDomain(), hasStatus("FieldValueNotFound",
+        "testcall in namespace junit, for testName: Test this failure"));
   }
 
   @Test
@@ -465,7 +467,8 @@ public abstract class PodHelperTestBase {
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
-    assertThat(getDomain(), hasStatus("Forbidden", getQuotaExceededMessage()));
+    assertThat(getDomain(), hasStatus("Forbidden",
+        "testcall in namespace junit, for testName: " + getQuotaExceededMessage()));
   }
 
   private ApiException createQuotaExceededException() {
@@ -903,7 +906,7 @@ public abstract class PodHelperTestBase {
   }
 
   @Test
-  public void whenNoPod_retryOnFailure() {
+  public void whenNoPod_unrecoverableFailureOnUnauthorized() {
     testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.POD, getPodName(), NS, 401);
 
@@ -911,7 +914,7 @@ public abstract class PodHelperTestBase {
     Step initialStep = stepFactory.createStepList(terminalStep);
     testSupport.runSteps(initialStep);
 
-    testSupport.verifyCompletionThrowable(ApiException.class);
+    testSupport.verifyCompletionThrowable(FailureStatusSourceException.class);
   }
 
   @Test

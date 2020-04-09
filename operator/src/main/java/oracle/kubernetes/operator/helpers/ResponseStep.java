@@ -7,8 +7,8 @@ import java.util.Optional;
 
 import oracle.kubernetes.operator.calls.AsyncRequestStep;
 import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.RequestParams;
 import oracle.kubernetes.operator.calls.RetryStrategy;
+import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.MessageKeys;
@@ -25,6 +25,7 @@ import oracle.kubernetes.operator.work.Step;
  */
 public abstract class ResponseStep<T> extends Step {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   private final Step conflictStep;
   private AsyncRequestStep previousStep = null;
 
@@ -155,17 +156,7 @@ public abstract class ResponseStep<T> extends Step {
   }
 
   protected NextAction onFailureNoRetry(Packet packet, CallResponse<T> callResponse) {
-
-    if (previousStep != null) {
-      RequestParams requestParams = previousStep.getRequestParams();
-      if (requestParams != null) {
-        // FIXME, HERE, create exception that includes message about request and response
-        // FailureSourceException :)
-
-      }
-    }
-
-    return doTerminate(callResponse.getE(), packet);
+    return doTerminate(UnrecoverableErrorBuilder.createExceptionFromFailedCall(callResponse), packet);
   }
 
   protected boolean isNotAuthorizedOrForbidden(CallResponse<T> callResponse) {

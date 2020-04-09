@@ -7,12 +7,13 @@ import java.util.Collections;
 
 import com.google.gson.Gson;
 import io.kubernetes.client.openapi.ApiException;
-import okhttp3.Call;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.FailureStatusSource;
 
 public class UnprocessableEntityBuilder implements FailureStatusSource {
   static final int HTTP_UNPROCESSABLE_ENTITY = 422;
+
+  private final String message;
   private final ErrorBody errorBody;
 
   /**
@@ -30,10 +31,8 @@ public class UnprocessableEntityBuilder implements FailureStatusSource {
   }
 
   private UnprocessableEntityBuilder(CallResponse callResponse) {
-
-    // FIXME: build message including details of request
-
-    errorBody = new Gson().fromJson(exception.getResponseBody(), ErrorBody.class);
+    message = callResponse.getRequestParams().toString(false);
+    errorBody = new Gson().fromJson(callResponse.getE().getResponseBody(), ErrorBody.class);
   }
 
   public static boolean isUnprocessableEntity(ApiException exception) {
@@ -41,12 +40,13 @@ public class UnprocessableEntityBuilder implements FailureStatusSource {
   }
 
   public UnprocessableEntityBuilder() {
+    message = "";
     errorBody = new ErrorBody();
   }
 
   @Override
   public String getMessage() {
-    return errorBody.getMessage();
+    return message + ": " + errorBody.getMessage();
   }
 
   @Override

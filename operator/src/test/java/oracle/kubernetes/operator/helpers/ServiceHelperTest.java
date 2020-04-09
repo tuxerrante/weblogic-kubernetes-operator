@@ -18,10 +18,10 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.calls.FailureStatusSourceException;
 import oracle.kubernetes.operator.calls.unprocessable.UnprocessableEntityBuilder;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -305,7 +305,7 @@ public class ServiceHelperTest extends ServiceHelperTestBase {
 
     runServiceHelper();
 
-    testSupport.verifyCompletionThrowable(ApiException.class);
+    testSupport.verifyCompletionThrowable(FailureStatusSourceException.class);
   }
 
   @Test
@@ -318,7 +318,8 @@ public class ServiceHelperTest extends ServiceHelperTestBase {
 
     runServiceHelper();
 
-    assertThat(getDomain(), hasStatus("FieldValueNotFound", "Test this failure"));
+    assertThat(getDomain(), hasStatus("FieldValueNotFound",
+        "testcall in namespace junit, for testName: Test this failure"));
   }
 
   @Test

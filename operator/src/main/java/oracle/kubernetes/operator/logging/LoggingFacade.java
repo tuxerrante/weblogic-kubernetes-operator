@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.logging;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.ResourceBundle;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -649,6 +650,26 @@ public class LoggingFacade {
     } catch (Exception ex) {
       return msg;
     }
+  }
+
+  public ResourceBundle getResourceBundle() {
+    for (Logger l = getUnderlyingLogger(); l != null; l = l.getParent()) {
+      ResourceBundle rb = l.getResourceBundle();
+      if (rb != null) {
+        return rb;
+      }
+    }
+    throw new AssertionError(formatMessage(MessageKeys.RESOURCE_BUNDLE_NOT_FOUND));
+  }
+
+  public String formatMessage(String msgId, Object... params) {
+    if (params == null || params.length == 0) {
+      return getResourceBundle().getString(msgId);
+    }
+
+    String msg = getResourceBundle().getString(msgId);
+    MessageFormat formatter = new MessageFormat(msg);
+    return formatter.format(params);
   }
 
   /**

@@ -24,8 +24,8 @@ public final class CallResponse<T> {
     return new CallResponse<Void>(requestParams, null, ex, statusCode);
   }
 
-  public static CallResponse<Void> createNull() {
-    return new CallResponse<Void>(null, null, null, 0);
+  public static <R> CallResponse<R> createNull() {
+    return new CallResponse<R>(null, null, null, 0);
   }
 
   CallResponse<T> withResponseHeaders(Map<String, List<String>> responseHeaders) {
@@ -75,4 +75,5 @@ public final class CallResponse<T> {
   public String getHeadersString() {
     return Optional.ofNullable(responseHeaders).map(Object::toString).orElse("");
   }
+  
 }

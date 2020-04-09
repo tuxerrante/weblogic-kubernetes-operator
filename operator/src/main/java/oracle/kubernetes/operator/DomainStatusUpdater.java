@@ -65,6 +65,8 @@ import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.Progre
  */
 @SuppressWarnings("WeakerAccess")
 public class DomainStatusUpdater {
+  static final int HTTP_UNPROCESSABLE_ENTITY = 422;
+
   public static final String INSPECTING_DOMAIN_PROGRESS_REASON = "InspectingDomainPresence";
   public static final String MANAGED_SERVERS_STARTING_PROGRESS_REASON = "ManagedServersStarting";
   public static final String SERVERS_READY_REASON = "ServersReady";
@@ -216,9 +218,8 @@ public class DomainStatusUpdater {
     }
 
     private boolean isPatchFailure(CallResponse<Domain> callResponse) {
-
-      // HERE, FIXME
-      return callResponse.getStatusCode() == HTTP_INTERNAL_ERROR;
+      return callResponse.getStatusCode() == HTTP_INTERNAL_ERROR
+          || callResponse.getStatusCode() == HTTP_UNPROCESSABLE_ENTITY;
     }
 
     private Step createDomainRefreshStep(DomainStatusUpdaterContext context) {
