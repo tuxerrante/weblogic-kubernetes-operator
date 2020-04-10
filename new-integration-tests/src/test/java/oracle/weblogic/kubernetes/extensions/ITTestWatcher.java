@@ -3,6 +3,10 @@
 
 package oracle.weblogic.kubernetes.extensions;
 
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1DeploymentList;
@@ -13,12 +17,8 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeList;
 import io.kubernetes.client.openapi.models.V1ReplicaSetList;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.openapi.models.V1ServiceAccountList;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import org.junit.jupiter.api.extension.AfterAllCallback;
-
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -31,7 +31,7 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
 
   @Override
   public void beforeAll(ExtensionContext context) {
-    logger.info("beforeEach");
+    logger.info("beforeAll");
   }
 
   @Override
@@ -46,7 +46,7 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
 
   @Override
   public void afterAll(ExtensionContext context) {
-    logger.info("afterEach");
+    logger.info("afterAll");
   }
 
   @Override
@@ -61,6 +61,11 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
 
   @Override
   public void testFailed(ExtensionContext extensionContext, Throwable throwable) {
+    logger.info("testFailed");
+  }
+
+  // @Override
+  public void testFailed1(ExtensionContext extensionContext, Throwable throwable) {
     logger.info("testFailed");
     logger.info("Test Class :" + extensionContext.getTestClass().get().getName());
     logger.info("Test Method :" + extensionContext.getTestMethod().get().getName());
