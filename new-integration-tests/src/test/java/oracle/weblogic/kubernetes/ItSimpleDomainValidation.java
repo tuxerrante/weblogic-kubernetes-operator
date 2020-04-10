@@ -12,9 +12,11 @@ import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.tags.Slow;
+import oracle.weblogic.kubernetes.extensions.ITTestWatcher;
 import oracle.weblogic.kubernetes.extensions.LoggedTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Simple validation of basic domain functions")
 @IntegrationTest
+@ExtendWith(ITTestWatcher.class)
 class ItSimpleDomainValidation implements LoggedTest {
 
   @Test

@@ -8,6 +8,10 @@ import java.util.Random;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Namespace;
+import io.kubernetes.client.openapi.models.V1NamespaceList;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import java.util.HashMap;
+import java.util.Iterator;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 
 public class Namespace {
@@ -46,6 +50,11 @@ public class Namespace {
    * @throws ApiException if Kubernetes Client API request fails
    */
   public static boolean create(V1Namespace name) throws ApiException {
+      HashMap<String, String> labels = new HashMap();
+      labels.put("type", "ittests");
+      V1ObjectMeta metadata = name.getMetadata();
+      metadata.setLabels(labels);
+
     return Kubernetes.createNamespace(name);
   }
 
@@ -72,5 +81,14 @@ public class Namespace {
 
   public static boolean exists(String name) throws ApiException {
     return Kubernetes.listNamespaces().contains(name);
+  }
+
+  public static void getNamespaceDetails() throws ApiException {
+      V1NamespaceList listNamespacesAsObjects = Kubernetes.listNamespacesAsObjects();
+      List<V1Namespace> items = listNamespacesAsObjects.getItems();
+      for (Iterator<V1Namespace> iterator = items.iterator(); iterator.hasNext();) {
+          V1Namespace next = iterator.next();
+
+      }
   }
 }

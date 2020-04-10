@@ -5,6 +5,7 @@ package oracle.weblogic.kubernetes.actions.impl.primitive;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -19,6 +20,10 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
+import io.kubernetes.client.openapi.models.V1Deployment;
+import io.kubernetes.client.openapi.models.V1DeploymentList;
+import io.kubernetes.client.openapi.models.V1Job;
+import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceBuilder;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
@@ -30,6 +35,8 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1ReplicaSet;
+import io.kubernetes.client.openapi.models.V1ReplicaSetList;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -64,13 +71,17 @@ public class Kubernetes implements LoggedTest {
   // Extended GenericKubernetesApi clients
   private static GenericKubernetesApi<V1ConfigMap, V1ConfigMapList> configMapClient = null;
   private static GenericKubernetesApi<Domain, DomainList> crdClient = null;
+  private static GenericKubernetesApi<V1Deployment, V1DeploymentList> deploymentClient = null;
+  private static GenericKubernetesApi<V1Job, V1JobList> jobClient = null;
   private static GenericKubernetesApi<V1Namespace, V1NamespaceList> namespaceClient = null;
   private static GenericKubernetesApi<V1Pod, V1PodList> podClient = null;
   private static GenericKubernetesApi<V1PersistentVolume, V1PersistentVolumeList> pvClient = null;
   private static GenericKubernetesApi<V1PersistentVolumeClaim, V1PersistentVolumeClaimList> pvcClient = null;
+  private static GenericKubernetesApi<V1ReplicaSet, V1ReplicaSetList> rsClient = null;
   private static GenericKubernetesApi<V1Secret, V1SecretList> secretClient = null;
   private static GenericKubernetesApi<V1Service, V1ServiceList> serviceClient = null;
   private static GenericKubernetesApi<V1ServiceAccount, V1ServiceAccountList> serviceAccountClient = null;
+  private static HashMap<String, String> labels = null;
 
   static {
     try {
@@ -79,6 +90,8 @@ public class Kubernetes implements LoggedTest {
       coreV1Api = new CoreV1Api();
       customObjectsApi = new CustomObjectsApi();
       initializeGenericKubernetesApiClients();
+      labels = new HashMap();
+      labels.put("type", "ittests");
     } catch (IOException ioex) {
       throw new ExceptionInInitializerError(ioex);
     }
@@ -187,8 +200,14 @@ public class Kubernetes implements LoggedTest {
     return true;
   }
 
-  public static List listDeployments() {
-    return new ArrayList();
+  /**
+   * List all deployments in a given namespace
+   * @param namespace
+   * @return V1DeploymentList
+   */
+  public static V1DeploymentList listDeployments(String namespace) {
+    KubernetesApiResponse<V1DeploymentList> list = deploymentClient.list(namespace);
+    return list.getObject();
   }
 
   // --------------------------- pods -----------------------------------------
@@ -270,6 +289,7 @@ public class Kubernetes implements LoggedTest {
    */
   public static boolean createNamespace(String name) throws ApiException {
     V1ObjectMeta meta = new V1ObjectMetaBuilder().withName(name).build();
+    addLabel(meta);
     V1Namespace namespace = new V1NamespaceBuilder().withMetadata(meta).build();
 
     namespace = coreV1Api.createNamespace(
@@ -294,6 +314,8 @@ public class Kubernetes implements LoggedTest {
       throw new IllegalArgumentException(
           "Parameter 'namespace' cannot be null when calling createNamespace()");
     }
+
+    namespace.setMetadata(addLabel(namespace.getMetadata()));
 
     V1Namespace ns = coreV1Api.createNamespace(
         namespace, // V1Namespace configuration data object
@@ -333,6 +355,28 @@ public class Kubernetes implements LoggedTest {
   }
 
   /**
+   * List of namespaces in the Kubernetes cluster as V1NamespaceList.
+   *
+   * @return V1NamespaceList in Kubernetes cluster
+   * @throws ApiException if Kubernetes client API call fails
+   */
+  public static V1NamespaceList listNamespacesAsObjects() throws ApiException {
+    V1NamespaceList namespaceList = coreV1Api.listNamespace(
+        PRETTY, // pretty print output
+        ALLOW_WATCH_BOOKMARKS, // allowWatchBookmarks requests watch events with type "BOOKMARK"
+        null, // set when retrieving more results from the server
+        null, // selector to restrict the list of returned objects by their fields
+        null, // selector to restrict the list of returned objects by their labels
+        null, // maximum number of responses to return for a list call
+        RESOURCE_VERSION, // shows changes that occur after that particular version of a resource
+        TIMEOUT_SECONDS, // Timeout for the list/watch call
+        false // Watch for changes to the described resources
+    );
+
+    return namespaceList;
+  }
+
+  /**
    * Delete a namespace for the given name.
    *
    * @param name name of namespace
@@ -369,6 +413,7 @@ public class Kubernetes implements LoggedTest {
    */
   public static boolean createDomainCustomResource(Domain domain) throws ApiException {
 
+    domain.metadata(addLabel(domain.metadata()));
     String namespace = domain.metadata().getNamespace();
 
     JsonElement json = convertToJson(domain);
@@ -501,6 +546,7 @@ public class Kubernetes implements LoggedTest {
     }
 
     String namespace = configMap.getMetadata().getNamespace();
+    configMap.setMetadata(addLabel(configMap.getMetadata()));
 
     V1ConfigMap cm = coreV1Api.createNamespacedConfigMap(
         namespace, // config map's namespace
@@ -591,6 +637,7 @@ public class Kubernetes implements LoggedTest {
     }
 
     String namespace = secret.getMetadata().getNamespace();
+    secret.setMetadata(addLabel(secret.getMetadata()));
 
     V1Secret v1Secret = coreV1Api.createNamespacedSecret(
         namespace, // name of the Namespace
@@ -630,6 +677,16 @@ public class Kubernetes implements LoggedTest {
     return true;
   }
 
+  /**
+   * List secrets in a given namespace
+   * @param namespace
+   * @return V1SecretList
+   */
+  public static V1SecretList listSecrets(String namespace) {
+    KubernetesApiResponse<V1SecretList> list = secretClient.list(namespace);
+    return list.getObject();
+  }
+
   // --------------------------- pv/pvc ---------------------------
 
   /**
@@ -646,6 +703,7 @@ public class Kubernetes implements LoggedTest {
           "Parameter 'persistentVolume' cannot be null when calling createPv()");
     }
 
+    persistentVolume.setMetadata(addLabel(persistentVolume.getMetadata()));
     V1PersistentVolume pv = coreV1Api.createPersistentVolume(
         persistentVolume, // persistent volume configuration data
         PRETTY, // pretty print output
@@ -680,6 +738,7 @@ public class Kubernetes implements LoggedTest {
           "'namespace' field in the metadata cannot be null when calling createPvc()");
     }
 
+    persistentVolumeClaim.setMetadata(addLabel(persistentVolumeClaim.getMetadata()));
     String namespace = persistentVolumeClaim.getMetadata().getNamespace();
 
     V1PersistentVolumeClaim pvc = coreV1Api.createNamespacedPersistentVolumeClaim(
@@ -749,6 +808,24 @@ public class Kubernetes implements LoggedTest {
     return true;
   }
 
+  /**
+   * List all persistent volumes
+   * @return V1PersistentVolumeList
+   */
+  public static V1PersistentVolumeList listPersistenVolumes() {
+    KubernetesApiResponse<V1PersistentVolumeList> list = pvClient.list();
+    return list.getObject();
+  }
+
+   /**
+   * List all persistent volume claims
+   * @return V1PersistentVolumeClaimList
+   */
+  public static V1PersistentVolumeClaimList listPersistenVolumeClaims() {
+    KubernetesApiResponse<V1PersistentVolumeClaimList> list = pvcClient.list();
+    return list.getObject();
+  }
+
   // --------------------------- service account ---------------------------
 
   /**
@@ -775,6 +852,7 @@ public class Kubernetes implements LoggedTest {
           "'namespace' field in the metadata cannot be null when calling createServiceAccount()");
     }
 
+    serviceAccount.setMetadata(addLabel(serviceAccount.getMetadata()));
     String namespace = serviceAccount.getMetadata().getNamespace();
 
     serviceAccount = coreV1Api.createNamespacedServiceAccount(
@@ -815,6 +893,16 @@ public class Kubernetes implements LoggedTest {
     return true;
   }
 
+  /**
+   * List all service accounts in a given namespace
+   * @param namespace
+   * @return V1ServiceAccountList
+   */
+  public static V1ServiceAccountList listServiceAccounts(String namespace) {
+    KubernetesApiResponse<V1ServiceAccountList> list = serviceAccountClient.list(namespace);
+    return list.getObject();
+  }
+
   // --------------------------- Services ---------------------------
 
   /**
@@ -840,6 +928,7 @@ public class Kubernetes implements LoggedTest {
           "'namespace' field in the metadata cannot be null when calling createService()");
     }
 
+    service.setMetadata(addLabel(service.getMetadata()));
     String namespace = service.getMetadata().getNamespace();
 
     V1Service svc = coreV1Api.createNamespacedService(
@@ -880,5 +969,47 @@ public class Kubernetes implements LoggedTest {
     return true;
   }
 
-  //------------------------
+  // --------------------------- jobs ---------------------------
+
+  /**
+   * List all jobs in a given namespace
+   * @param namespace
+   * @return V1JobList
+   */
+  public static V1JobList listJobs(String namespace) {
+    KubernetesApiResponse<V1JobList> list = jobClient.list(namespace);
+    return list.getObject();
+  }
+
+  // --------------------------- resplica sets ---------------------------
+
+  /**
+   * List all replica sets in a given namespace
+   * @param namespace
+   * @return V1ReplicaSetList
+   */
+  public static V1ReplicaSetList listReplicaSets(String namespace) {
+    KubernetesApiResponse<V1ReplicaSetList> list = rsClient.list(namespace);
+    return list.getObject();
+  }
+
+  // --------------------------- deployments ---------------------------
+
+  private static V1ObjectMeta addLabel(V1ObjectMeta meta) {
+    // if meta object is null create a new one and set label
+    if (meta == null) {
+      meta = new V1ObjectMetaBuilder()
+          .withLabels(labels)
+          .build();
+    } else if (meta.getLabels() == null) { // if labels is null set the new labels
+      meta.setLabels(labels);
+    } else {
+      meta.getLabels().put("type", "ittests"); // if labels already exists add type to it
+    }
+    return meta;
+  }
+
+
+
+
 }
