@@ -179,15 +179,16 @@ public class DomainStatusUpdater {
       JsonPatchBuilder builder = Json.createPatchBuilder();
       newStatus.createPatchFrom(builder, context.getStatus());
       LOGGER.info(MessageKeys.DOMAIN_STATUS, context.getDomainUid(), newStatus);
-
+      String patch = builder.build().toString();
       return new CallBuilder().patchDomainAsync(
             context.getDomainName(),
             context.getNamespace(),
-            new V1Patch(builder.build().toString()),
-            createResponseStep(context, getNext()));
+            new V1Patch(patch), // builder.build().toString()),
+            createResponseStep(context, getNext())
+                .withContext(context.getStatus(), patch));
     }
 
-    private ResponseStep<Domain> createResponseStep(DomainStatusUpdaterContext context, Step next) {
+    private PatchResponseStep createResponseStep(DomainStatusUpdaterContext context, Step next) {
       return new PatchResponseStep(this, context, next);
     }
   }
@@ -195,6 +196,8 @@ public class DomainStatusUpdater {
   static class PatchResponseStep extends DefaultResponseStep<Domain> {
     private final DomainStatusUpdaterStep updaterStep;
     private final DomainStatusUpdaterContext context;
+    private DomainStatus initialStatus;
+    private String patch;
 
     public PatchResponseStep(DomainStatusUpdaterStep updaterStep, DomainStatusUpdaterContext context, Step nextStep) {
       super(nextStep);
@@ -205,10 +208,23 @@ public class DomainStatusUpdater {
     @Override
     public NextAction onFailure(Packet packet, CallResponse<Domain> callResponse) {
       if (!isPatchFailure(callResponse)) {
+        LOGGER.info(String.format("Patch %s rejected for status %s ", patch, initialStatus));
         return super.onFailure(packet, callResponse);
       }
 
       return doNext(createRetry(context, getNext()), packet);
+    }
+
+    @Override
+    public NextAction onSuccess(Packet packet, CallResponse<Domain> callResponse) {
+      LOGGER.info(String.format("Patch %s successful for status %s ", patch, initialStatus));
+      return super.onSuccess(packet, callResponse);
+    }
+
+    PatchResponseStep withContext(DomainStatus initialStatus, String patch) {
+      this.initialStatus = initialStatus;
+      this.patch = patch;
+      return this;
     }
 
     public Step createRetry(DomainStatusUpdaterContext context, Step next) {
