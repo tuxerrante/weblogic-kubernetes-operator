@@ -191,7 +191,7 @@ public class DomainIntrospectorJobTest {
   }
 
   @Test
-  public void whenNoJob_onFifehundred() {
+  public void whenNoJob_onFiveHundred() {
     testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnResource(KubernetesTestSupport.JOB, getJobName(), NS, 500);
 

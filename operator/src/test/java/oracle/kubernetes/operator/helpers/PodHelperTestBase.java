@@ -906,7 +906,7 @@ public abstract class PodHelperTestBase {
   }
 
   @Test
-  public void whenNoPod_onFivehundred() {
+  public void whenNoPod_onFiveHundred() {
     testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.POD, getPodName(), NS, 500);
 

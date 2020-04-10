@@ -18,6 +18,7 @@ import javax.json.Json;
 import javax.json.JsonPatchBuilder;
 
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
@@ -129,6 +130,13 @@ public class DomainStatusUpdater {
    */
   public static Step createFailedStep(CallResponse<?> callResponse, Step next) {
     FailureStatusSource failure = UnrecoverableErrorBuilder.fromFailedCall(callResponse);
+
+    LOGGER.severe(MessageKeys.CALL_FAILED, failure.getMessage(), failure.getReason());
+    ApiException apiException = callResponse.getE();
+    if (apiException != null) {
+      LOGGER.fine(MessageKeys.EXCEPTION, apiException);
+    }
+
     return createFailedStep(failure.getReason(), failure.getMessage(), next);
   }
 
