@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.meterware.simplestub.Memento;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -93,7 +94,8 @@ public class DomainIntrospectorJobTest {
     mementos.add(
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, getMessageKeys())
-            .withLogLevel(Level.FINE));
+            .withLogLevel(Level.FINE)
+            .ignoringLoggedExceptions(ApiException.class));
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
     mementos.add(ScanCacheStub.install());

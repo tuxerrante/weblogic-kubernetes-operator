@@ -18,6 +18,7 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import oracle.kubernetes.operator.LabelConstants;
@@ -158,7 +159,8 @@ public class ServiceHelperTest extends ServiceHelperTestBase {
         consoleHandlerMemento =
             TestUtils.silenceOperatorLogger()
                 .collectLogMessages(logRecords, MESSAGE_KEYS)
-                .withLogLevel(Level.FINE));
+                .withLogLevel(Level.FINE)
+                .ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install());
     mementos.add(UnitTestHash.install());
 

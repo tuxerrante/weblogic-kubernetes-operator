@@ -199,7 +199,8 @@ public abstract class PodHelperTestBase {
     mementos.add(
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, getMessageKeys())
-            .withLogLevel(Level.FINE));
+            .withLogLevel(Level.FINE)
+            .ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install());
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());
