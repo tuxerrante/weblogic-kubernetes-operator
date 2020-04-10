@@ -652,6 +652,10 @@ public class LoggingFacade {
     }
   }
 
+  /**
+   * Accessor for the resource bundle backing this logger.
+   * @return the bundle
+   */
   public ResourceBundle getResourceBundle() {
     for (Logger l = getUnderlyingLogger(); l != null; l = l.getParent()) {
       ResourceBundle rb = l.getResourceBundle();
@@ -662,6 +666,12 @@ public class LoggingFacade {
     throw new AssertionError(formatMessage(MessageKeys.RESOURCE_BUNDLE_NOT_FOUND));
   }
 
+  /**
+   * Formats message based on string loaded from the resource bundle backing this logger.
+   * @param msgId Message id
+   * @param params Parameters to message formatting
+   * @return Formatted message
+   */
   public String formatMessage(String msgId, Object... params) {
     if (params == null || params.length == 0) {
       return getResourceBundle().getString(msgId);
@@ -700,7 +710,7 @@ public class LoggingFacade {
   }
 
   /** Holds caller details obtained by inference. */
-  class CallerDetails {
+  static class CallerDetails {
     String clazz;
     String method;
   }
