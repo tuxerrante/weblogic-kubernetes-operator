@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes.extensions;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,9 +15,13 @@ import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeList;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1ReplicaSetList;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.openapi.models.V1ServiceAccountList;
+import java.util.List;
+import oracle.weblogic.domain.DomainList;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -27,11 +32,17 @@ import org.junit.jupiter.api.extension.TestWatcher;
 
 import static oracle.weblogic.kubernetes.extensions.LoggedTest.logger;
 
-public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEachCallback, BeforeAllCallback, AfterAllCallback {
+public class ITTestWatcher implements
+    TestWatcher,
+    AfterEachCallback,
+    BeforeEachCallback,
+    BeforeAllCallback,
+    AfterAllCallback {
 
   @Override
   public void beforeAll(ExtensionContext context) {
     logger.info("beforeAll");
+    Object get = context.getTestInstance().get();
   }
 
   @Override
@@ -42,6 +53,8 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
   @Override
   public void afterEach(ExtensionContext context) {
     logger.info("afterEach");
+    ExtensionContext.Store store = context.getStore(ExtensionContext.Namespace.GLOBAL);
+    store.put("name", "value");
   }
 
   @Override
@@ -56,12 +69,33 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
 
   @Override
   public void testDisabled(ExtensionContext extensionContext, Optional<String> optional) {
-    logger.info("testDisabled");
+    String name = "";
+    logger.log(Level.INFO, "testDisabled{0}{1}", new Object[]{name, name});
   }
 
   @Override
   public void testFailed(ExtensionContext extensionContext, Throwable throwable) {
-    logger.info("testFailed");
+    try {
+      logger.info("testFailed");
+      Object testInstance = extensionContext.getRequiredTestInstance();
+      Field field = testInstance.getClass().getField("p1");
+      String name = field.getName();
+      Object get = field.get(testInstance);
+      logger.info("Instance field name : " + name + ", Instance field value :" + get);
+      ExtensionContext.Store store = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL);
+      Object requiredTestInstance = extensionContext.getRequiredTestInstance();
+      logger.info("STORE:" + (String) store.get("name"));
+      logger.info(testInstance.getClass().getSimpleName());
+    } catch (NoSuchFieldException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (SecurityException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (IllegalArgumentException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (IllegalAccessException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    }
+
   }
 
   // @Override
@@ -71,7 +105,8 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
     logger.info("Test Method :" + extensionContext.getTestMethod().get().getName());
 
     try {
-      String namespace = "my-ns";
+      String namespace = "domain-ns";
+      String opnamespace = "operator-ns";
       // get service accounts
       V1ServiceAccountList listServiceAccounts = Kubernetes.listServiceAccounts(namespace);
       // get namespaces
@@ -90,10 +125,20 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
       V1DeploymentList listDeployments = Kubernetes.listDeployments(namespace);
       // get replicasets
       V1ReplicaSetList listReplicaSets = Kubernetes.listReplicaSets(namespace);
-      // get Domain CRD
       // get Domain
-      // get pods
-      // get logs
+      DomainList listDomains = Kubernetes.listDomains(namespace);
+      // get domain pods
+      V1PodList listPods = Kubernetes.listPods(namespace, null);
+      List<V1Pod> domainPods = listPods.getItems();
+      for (V1Pod pod : domainPods) {
+        String podLog = Kubernetes.getPodLog(pod.getMetadata().getName(), namespace);
+      }
+      // get operator pods
+      V1PodList opPodsList = Kubernetes.listPods(opnamespace, null);
+      List<V1Pod> opPods = opPodsList.getItems();
+      for (V1Pod item : opPods) {
+        String podLog = Kubernetes.getPodLog(item.getMetadata().getName(), namespace);
+      }
     } catch (ApiException ex) {
       Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
     }
@@ -102,5 +147,24 @@ public class ITTestWatcher implements TestWatcher, AfterEachCallback, BeforeEach
   @Override
   public void testSuccessful(ExtensionContext extensionContext) {
     logger.info("testSuccessful");
+    try {
+      Object testInstance = extensionContext.getRequiredTestInstance();
+      Field field = testInstance.getClass().getField("p1");
+      String name = field.getName();
+      Object get = field.get(testInstance);
+      logger.info("Instance field name : " + name + ", Instance field value :" + get);
+      ExtensionContext.Store store = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL);
+      Object requiredTestInstance = extensionContext.getRequiredTestInstance();
+      logger.info("STORE:" + (String) store.get("name"));
+      logger.info(testInstance.getClass().getSimpleName());
+    } catch (NoSuchFieldException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (SecurityException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (IllegalArgumentException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    } catch (IllegalAccessException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    }
   }
 }

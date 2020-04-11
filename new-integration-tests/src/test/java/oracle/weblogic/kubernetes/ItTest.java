@@ -14,10 +14,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 @DisplayName("Simple validation of junit5 functions")
 @IntegrationTest
 @ExtendWith(ITTestWatcher.class)
-class ItTest implements LoggedTest {
+public class ItTest implements LoggedTest {
+
+  public String p1 = "v1";
+  public static String p2 = "v2";
 
   @BeforeAll
   public void beforeAll() {
@@ -40,24 +45,25 @@ class ItTest implements LoggedTest {
   }
 
   @Test
-  @DisplayName("Sample JUnit5 test pass ")
-  public void testPass() {
+  public void test1() {
     String name = "name";
     String namespace = "namespace";
     Object obj = new Object();
-
-    logger.info(name);
-
+    logger.info("test1" + name);
+    p1 = "v1.2";
+    p2 = "v2.2";
   }
 
   @Test
   @DisplayName("Sample JUnit5 test fail")
-  public void testFail() {
+  public void test2() {
     String name = "name";
     String namespace = "namespace";
     Object obj = new Object();
-
-    logger.info(name);
+    logger.info("test2" + name);
+    p1 = "v1.1";
+    p2 = "v2.1";
+    fail("Failing test");
 
   }
 

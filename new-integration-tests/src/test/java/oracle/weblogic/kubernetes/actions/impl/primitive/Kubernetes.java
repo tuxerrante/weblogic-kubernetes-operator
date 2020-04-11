@@ -48,6 +48,8 @@ import oracle.weblogic.domain.Domain;
 import oracle.weblogic.domain.DomainList;
 import oracle.weblogic.kubernetes.extensions.LoggedTest;
 
+import static oracle.weblogic.kubernetes.extensions.LoggedTest.logger;
+
 // TODO ryan - in here we want to implement all of the kubernetes
 // primitives that we need, using the API, not spawning a process
 // to run kubectl.
@@ -278,6 +280,29 @@ public class Kubernetes implements LoggedTest {
     return true;
   }
 
+  /**
+   * A utility method to list all pods in given namespace and a label
+   * This method can be used as diagnostic tool to get the details of pods.
+   * @param namespace in which to list all pods
+   * @param labelSelectors with which the pods are decorated
+   * @throws ApiException when there is error in querying the cluster
+   */
+  public static V1PodList listPods(String namespace, String labelSelectors) throws ApiException {
+    V1PodList v1PodList =
+        coreV1Api.listNamespacedPod(
+            namespace, // namespace in which to look for the pods.
+            Boolean.FALSE.toString(), // pretty print output.
+            Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK".
+            null, // continue to query when there is more results to return.
+            null, // selector to restrict the list of returned objects by their fields
+            labelSelectors, // selector to restrict the list of returned objects by their labels.
+            null, // maximum number of responses to return for a list call.
+            null, // shows changes that occur after that particular version of a resource.
+            null, // Timeout for the list/watch call.
+            Boolean.FALSE // Watch for changes to the described resources.
+        );
+    return v1PodList;
+  }
   // --------------------------- namespaces -----------------------------------
 
   /**
@@ -817,7 +842,7 @@ public class Kubernetes implements LoggedTest {
     return list.getObject();
   }
 
-   /**
+  /**
    * List all persistent volume claims
    * @return V1PersistentVolumeClaimList
    */
