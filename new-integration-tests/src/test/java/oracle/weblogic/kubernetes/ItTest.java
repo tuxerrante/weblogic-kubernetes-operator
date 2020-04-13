@@ -16,55 +16,56 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+
+
 @DisplayName("Simple validation of junit5 functions")
 @IntegrationTest
 @ExtendWith(ITTestWatcher.class)
 public class ItTest implements LoggedTest {
 
-  public String p1 = "v1";
-  public static String p2 = "v2";
+  public String domnamespace;
+  public String opnamespace;
 
   @BeforeAll
   public void beforeAll() {
-    logger.info("beforeAll");
+    logger.info("Running beforeAll");
+    //fail("Failing test");
   }
 
   @BeforeEach
   public void beforeEach() {
-    logger.info("beforeEach");
+    logger.info("Running beforeEach");
+    //fail("Failing test");
   }
 
   @AfterEach
   public void afterEach() {
-    logger.info("afterEach");
+    logger.info("Running afterEach");
+    //fail("Failing test");
   }
 
   @AfterAll
   public void afterAll() {
-    logger.info("afterAll");
+    logger.info("Running afterAll");
+    //fail("Failing test");
   }
 
   @Test
   public void test1() {
-    String name = "name";
-    String namespace = "namespace";
-    Object obj = new Object();
-    logger.info("test1" + name);
-    p1 = "v1.2";
-    p2 = "v2.2";
+    domnamespace = "dom-test1";
+    opnamespace = "op-test1";
+    logger.info("Running test1");
+    //assertNotNull(null);
+    fail("Failling test1");
   }
 
   @Test
   @DisplayName("Sample JUnit5 test fail")
   public void test2() {
-    String name = "name";
-    String namespace = "namespace";
-    Object obj = new Object();
-    logger.info("test2" + name);
-    p1 = "v1.1";
-    p2 = "v2.1";
-    fail("Failing test");
-
+    domnamespace = "dom-test2";
+    opnamespace = "op-test2";
+    logger.info("Running test2");
+    //fail("Failing test");
   }
 
 }
