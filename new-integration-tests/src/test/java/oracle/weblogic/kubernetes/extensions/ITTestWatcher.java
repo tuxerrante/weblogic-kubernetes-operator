@@ -8,26 +8,11 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import java.nio.charset.StandardCharsets;
-
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ConfigMapList;
-import io.kubernetes.client.openapi.models.V1DeploymentList;
-import io.kubernetes.client.openapi.models.V1JobList;
-import io.kubernetes.client.openapi.models.V1NamespaceList;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeList;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1ReplicaSetList;
-import io.kubernetes.client.openapi.models.V1SecretList;
-import io.kubernetes.client.openapi.models.V1ServiceAccountList;
-import oracle.weblogic.domain.DomainList;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
+import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -40,7 +25,6 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-import static io.kubernetes.client.util.Yaml.dump;
 import static oracle.weblogic.kubernetes.extensions.LoggedTest.logger;
 
 public class ITTestWatcher implements
@@ -57,6 +41,7 @@ public class ITTestWatcher implements
   private Store testStore;
   private String className;
   private String methodName;
+  private static final String DIAG_LOGS_DIR = System.getProperty("java.io.tmpdir");
 
   @Override
   public void beforeAll(ExtensionContext context) {
@@ -180,123 +165,40 @@ public class ITTestWatcher implements
     logger.info(getHeader("Test failed  ", className + "." + methodName, "-"));
   }
 
-  public void collectLogs(ExtensionContext extensionContext, String failedStage) {
-    String[] namespaceFields = {"domainns", "opns"};
-    final String DIAG_LOGS_DIR = System.getProperty("java.io.tmpdir");
-    String itClassName = extensionContext.getRequiredTestClass().getSimpleName();
-    String testName = methodName;
-    Object testInstance = extensionContext.getRequiredTestInstance();
-
-    Path path = null;
-    for (String namespace : namespaceFields) {
-      try {
-        switch (failedStage) {
-          case "beforeAll":
-          case "afterAll":
-            logger.info("beforeAll");
-            path = Paths.get(DIAG_LOGS_DIR, itClassName, failedStage);
-            break;
-          case "beforeEach":
-          case "afterEach":
-            logger.info("beforeEach");
-            path = Paths.get(DIAG_LOGS_DIR, itClassName, testName + "_" + failedStage);
-            break;
-          case "test":
-            logger.info("test");
-            path = Paths.get(DIAG_LOGS_DIR, itClassName, testName);
-            break;
-          default:
-            logger.info("");
-        }
-        logger.info("creating directory " + path);
-        Files.createDirectories(path);
-        generateLog((String) testInstance.getClass().getField(namespace).get(testInstance), path);
-      } catch (NoSuchFieldException
-          | SecurityException
-          | IllegalArgumentException
-          | IllegalAccessException
-          | IOException ex) {
-        Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+  private void collectLogs(ExtensionContext extensionContext, String failedStage) {
+    Path resultDir = null;
+    try {
+      resultDir = Files.createDirectories(
+          Paths.get(
+              DIAG_LOGS_DIR,
+              extensionContext.getRequiredTestClass().getSimpleName(),
+              getExtDir(failedStage)));
+    } catch (IOException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    try {
+      for (var namespace : LoggingUtil.getNamespaceList(extensionContext.getRequiredTestInstance())) {
+        LoggingUtil.generateLog((String)namespace, resultDir);
       }
+    } catch (IllegalArgumentException | IllegalAccessException | IOException | ApiException ex) {
+      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
 
-  public void generateLog(String namespace, Path path) {
-    try {
-      // get service accounts
-      V1ServiceAccountList listServiceAccounts = Kubernetes.listServiceAccounts(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_sa.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get namespaces
-      V1NamespaceList listNamespaces = Kubernetes.listNamespacesAsObjects();
-      Files.write(
-          Paths.get(path.toString(), namespace + "_ns.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get pv
-      V1PersistentVolumeList listPersistenVolumes = Kubernetes.listPersistenVolumes();
-      Files.write(
-          Paths.get(path.toString(), namespace + "_pv.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get pvc
-      V1PersistentVolumeClaimList listPersistenVolumeClaims = Kubernetes.listPersistenVolumeClaims();
-      Files.write(
-          Paths.get(path.toString(), namespace + "_pvc.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get secrets
-      V1SecretList listSecrets = Kubernetes.listSecrets(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_secrets.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get configmaps
-      V1ConfigMapList listConfigMaps = Kubernetes.listConfigMaps(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_cm.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get jobs
-      V1JobList listJobs = Kubernetes.listJobs(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_jobs.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get deployments
-      V1DeploymentList listDeployments = Kubernetes.listDeployments(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_deploy.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get replicasets
-      V1ReplicaSetList listReplicaSets = Kubernetes.listReplicaSets(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_rs.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get Domain
-      DomainList listDomains = Kubernetes.listDomains(namespace);
-      Files.write(
-          Paths.get(path.toString(), namespace + "_domain.log"),
-          dump(listServiceAccounts).getBytes(StandardCharsets.UTF_8)
-      );
-      // get domain pods
-      V1PodList listPods = Kubernetes.listPods(namespace, null);
-      List<V1Pod> domainPods = listPods.getItems();
-      for (V1Pod pod : domainPods) {
-        String podName = pod.getMetadata().getName();
-        String podLog = Kubernetes.getPodLog(podName, namespace);
-        Files.write(
-          Paths.get(path.toString(), namespace + podName + ".log"),
-          dump(podLog).getBytes(StandardCharsets.UTF_8)
-      );
-      }
-    } catch (ApiException | IOException ex) {
-      Logger.getLogger(ITTestWatcher.class.getName()).log(Level.SEVERE, null, ex);
+  private String getExtDir(String failedStage) {
+    String ext;
+    switch (failedStage) {
+      case "beforeEach":
+      case "afterEach":
+        ext = methodName + "_" + failedStage;
+        break;
+      case "test":
+        ext = methodName;
+        break;
+      default:
+        ext = failedStage;
     }
+    return ext;
   }
 
   private String getHeader(String header, String name, String rc) {

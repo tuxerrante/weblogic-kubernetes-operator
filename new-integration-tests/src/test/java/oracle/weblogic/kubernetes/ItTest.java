@@ -3,9 +3,15 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
+import oracle.weblogic.kubernetes.annotations.NamespaceList;
 import oracle.weblogic.kubernetes.extensions.ITTestWatcher;
 import oracle.weblogic.kubernetes.extensions.LoggedTest;
+import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -14,17 +20,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-
 
 @DisplayName("Simple validation of junit5 functions")
 @IntegrationTest
 @ExtendWith(ITTestWatcher.class)
 public class ItTest implements LoggedTest {
 
-  public String domnamespace;
-  public String opnamespace;
+  @NamespaceList
+  public String itTestns = "mynamespace";
 
   @BeforeAll
   public void beforeAll() {
@@ -52,18 +55,19 @@ public class ItTest implements LoggedTest {
 
   @Test
   public void test1() {
-    domnamespace = "dom-test1";
-    opnamespace = "op-test1";
     logger.info("Running test1");
-    //assertNotNull(null);
-    fail("Failling test1");
+    try {
+      //assertNotNull(null);
+      LoggingUtil.collectLogs(this);
+    } catch (IllegalArgumentException | IllegalAccessException | ApiException ex) {
+      Logger.getLogger(ItTest.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    //fail("Failling test1");
   }
 
   @Test
   @DisplayName("Sample JUnit5 test fail")
   public void test2() {
-    domnamespace = "dom-test2";
-    opnamespace = "op-test2";
     logger.info("Running test2");
     //fail("Failing test");
   }
