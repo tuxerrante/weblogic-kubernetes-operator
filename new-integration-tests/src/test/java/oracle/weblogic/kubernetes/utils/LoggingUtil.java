@@ -83,7 +83,7 @@ public class LoggingUtil {
     // get replicasets
     writeToFile(Kubernetes.listReplicaSets(namespace), resultDir.toString(), namespace + "_rs.log");
     // get Domain
-    writeToFile(Kubernetes.getDomainObjects(), resultDir.toString(), namespace + "_domain.log");
+    writeToFile(Kubernetes.getDomainObjects(), resultDir.toString(), namespace + "_all_domains.log");
     // get domain/operator pods
     for (var pod : Kubernetes.listPods(namespace, null).getItems()) {
       if (pod.getMetadata() != null) {
@@ -92,6 +92,7 @@ public class LoggingUtil {
             namespace + "_" + pod.getMetadata().getName() + ".log");
       }
     }
+    writeToFile(Kubernetes.listDomains(namespace), resultDir.toString(), namespace + "_domain.log");
   }
 
   /**
