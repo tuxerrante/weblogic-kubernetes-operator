@@ -11,9 +11,9 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 
 import io.kubernetes.client.openapi.ApiException;
-import java.util.logging.Level;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 
 import static io.kubernetes.client.util.Yaml.dump;
