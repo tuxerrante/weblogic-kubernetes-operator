@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
 
 import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
@@ -64,7 +63,6 @@ public class LoggingUtil {
    * @throws ApiException when Kubernetes cluster query fails
    */
   public static void generateLog(String namespace, Path resultDir) throws IOException, ApiException {
-    logger.setLevel(Level.FINE);
     logger.info("Collecting logs in namespace : {0}", namespace);
     // get service accounts
     writeToFile(Kubernetes.listServiceAccounts(namespace), resultDir.toString(), namespace + "_sa.log");
@@ -95,7 +93,6 @@ public class LoggingUtil {
             namespace + "_" + pod.getMetadata().getName() + ".log");
       }
     }
-    logger.setLevel(Level.INFO);
   }
 
   /**
