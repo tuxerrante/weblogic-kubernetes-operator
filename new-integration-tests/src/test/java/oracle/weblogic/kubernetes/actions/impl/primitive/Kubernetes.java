@@ -614,7 +614,7 @@ public class Kubernetes implements LoggedTest {
    * Get Domain Custom Resource objects in all namespaces.
    * @return Object Domain Custom Resources object
    */
-  public static Object getDomainObjects() throws ApiException {
+  public static Object getDomainObjects() {
     Object domainObjects = null;
     try {
       domainObjects = customObjectsApi.listClusterCustomObject(
