@@ -602,10 +602,11 @@ public class Kubernetes implements LoggedTest {
   public static DomainList listDomains(String namespace) {
     KubernetesApiResponse<DomainList> response = crdClient.list(namespace);
     if (response != null) {
+      logger.info("response is not null");
       logger.info(dump(response.getObject()));
       return response.getObject();
     } else {
-      logger.info("Domain list is empty");
+      logger.info("listDomains: Domain list is empty");
       return new DomainList();
     }
   }
@@ -630,7 +631,11 @@ public class Kubernetes implements LoggedTest {
           TIMEOUT_SECONDS, // timeout
           ALLOW_WATCH_BOOKMARKS // allow watch book marks
       );
-      logger.info(dump(domainObjects));
+      if (domainObjects != null) {
+        logger.info(dump(domainObjects));
+      } else {
+        logger.info("getDomainObjects: Domain list is empty");
+      }
     } catch (ApiException ex) {
       logger.severe(ex.getResponseBody());
     }
