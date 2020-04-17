@@ -600,14 +600,20 @@ public class Kubernetes implements LoggedTest {
    * @return List of Domain Custom Resources
    */
   public static DomainList listDomains(String namespace) {
-    KubernetesApiResponse<DomainList> response = crdClient.list(namespace);
-    if (response != null) {
-      logger.info("response is not null");
-      logger.info(dump(response.getObject()));
-      return response.getObject();
-    } else {
-      logger.info("listDomains: Domain list is empty");
-      return new DomainList();
+    KubernetesApiResponse<DomainList> response = null;
+    try {
+      response = crdClient.list(namespace);
+      if (response != null) {
+        logger.info("response is not null");
+        logger.info(dump(response.getObject()));
+        return response.getObject();
+      } else {
+        logger.info("listDomains: Domain list is empty");
+        return new DomainList();
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      return null;
     }
   }
 
