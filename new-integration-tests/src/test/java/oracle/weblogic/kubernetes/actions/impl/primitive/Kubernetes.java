@@ -601,16 +601,22 @@ public class Kubernetes implements LoggedTest {
    */
   public static DomainList listDomains(String namespace) {
     KubernetesApiResponse<DomainList> response = crdClient.list(namespace);
-    logger.info("listDomains");
-    logger.info(dump(response.getObject()));
-    return response != null ? response.getObject() : new DomainList();
+    if (response != null) {
+      logger.info(response.toString());
+      logger.info(dump(response.getObject()));
+      return response.getObject();
+    } else {
+      logger.info("Domain list is empty");
+      return new DomainList();
+    }
+    // return response != null ? response.getObject() : new DomainList();
   }
 
   /**
    * Get Domain Custom Resource objects in all namespaces.
    * @return Object Domain Custom Resources object
    */
-  public static Object getDomainObjects() {
+  public static Object getDomainObjects() throws ApiException {
     Object domainObjects = null;
     try {
       domainObjects = customObjectsApi.listClusterCustomObject(
@@ -629,6 +635,7 @@ public class Kubernetes implements LoggedTest {
       logger.info(dump(domainObjects));
     } catch (ApiException ex) {
       logger.severe(ex.getResponseBody());
+      // throw ex;
     }
     return domainObjects;
   }
