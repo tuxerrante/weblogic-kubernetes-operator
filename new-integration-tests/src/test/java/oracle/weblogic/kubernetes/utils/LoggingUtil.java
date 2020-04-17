@@ -111,7 +111,7 @@ public class LoggingUtil {
           dump(obj).getBytes(StandardCharsets.UTF_8)
       );
     } else {
-      logger.info("Object to write is null");
+      logger.info("Nothing to write in {0} list is empty", Paths.get(resultDir, fileName));
     }
   }
 
