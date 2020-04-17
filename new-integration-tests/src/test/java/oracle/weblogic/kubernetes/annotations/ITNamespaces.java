@@ -3,15 +3,13 @@
 
 package oracle.weblogic.kubernetes.annotations;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
 /**
  * Annotation interface to define the number of namespaces needed by the test.
  */
-@Target({ElementType.TYPE})
+// @Target({ElementType.LOCAL_VARIABLE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ITNamespaces {
   int numofns() default 0;

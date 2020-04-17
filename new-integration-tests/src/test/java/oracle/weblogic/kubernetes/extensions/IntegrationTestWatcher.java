@@ -85,21 +85,20 @@ public class IntegrationTestWatcher implements
   @Override
   public Object resolveParameter(ParameterContext parameterContext,
       ExtensionContext extensionContext) throws ParameterResolutionException {
-    Object requiredTestInstance = extensionContext.getRequiredTestInstance();
-    List<String> namespaces = null;
-
-    if (requiredTestInstance.getClass().isAnnotationPresent(ITNamespaces.class)) {
-      ITNamespaces itNsTag = requiredTestInstance.getClass().getAnnotation(ITNamespaces.class);
-      logger.info("Creating {0} unique namespaces for the test", itNsTag.numofns());
-      namespaces = new ArrayList();
-      for (int i = 1; i <= itNsTag.numofns(); i++) {
-        String namespace = assertDoesNotThrow(() -> createUniqueNamespace(),
-            "Failed to create unique namespace due to ApiException");
-        namespaces.add(namespace);
-        logger.info("Created a new namespace called {0}", namespace);
-      }
+    ITNamespaces get = parameterContext.findAnnotation(ITNamespaces.class).get();
+    List<String> namespaces = new ArrayList();
+    for (int i = 1; i <= get.numofns(); i++) {
+      String namespace = assertDoesNotThrow(() -> createUniqueNamespace(),
+          "Failed to create unique namespace due to ApiException");
+      namespaces.add(namespace);
+      logger.info("Created a new namespace called {0}", namespace);
     }
-    this.namespaces = namespaces;
+    if (this.namespaces != null) {
+      this.namespaces.addAll(namespaces);
+    } else {
+      this.namespaces = namespaces;
+    }
+    logger.info(this.namespaces.toString());
     return namespaces;
   }
 

@@ -87,7 +87,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @DisplayName("Test to create model in image domain and start the domain")
 @ExtendWith(Timing.class)
 @ExtendWith(IntegrationTestWatcher.class)
-@ITNamespaces(numofns = 2)
 class ItMiiDomain implements LoggedTest {
 
   // operator constants
@@ -125,7 +124,7 @@ class ItMiiDomain implements LoggedTest {
    * Install Operator.
    */
   @BeforeAll
-  public static void initAll(List namespaces) {
+  public static void initAll(@ITNamespaces(numofns = 2) List namespaces) {
     // create standard, reusbale retry/backoff policy
     withStandardRetryPolicy = with().pollDelay(2, SECONDS)
         .and().with().pollInterval(10, SECONDS)
@@ -191,7 +190,8 @@ class ItMiiDomain implements LoggedTest {
   @DisplayName("Create model in image domain")
   @Slow
   @MustNotRunInParallel
-  public void testCreateMiiDomain() {
+  public void testCreateMiiDomain(@ITNamespaces(numofns = 3) List namespaces) {
+    logger.info(namespaces.toString());
     // admin/managed server name here should match with model yaml in WDT_MODEL_FILE
     final String adminServerPodName = domainUID + "-admin-server";
     final String managedServerPrefix = domainUID + "-managed-server";
