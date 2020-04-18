@@ -41,15 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 //Every test class needs to tagged with this annotation for log collection and namespace creation.
 @ExtendWith(IntegrationTestWatcher.class)
-// The ITNamespaces numofns value is used to create the number of unique namespaces needed by the test.
-// The namespace list is available for use by all methods in the test class.
-@ITNamespaces(numofns = 1) //
 class ItSimpleDomainValidation implements LoggedTest {
 
   @Test
   @DisplayName("Create a domain")
   @Slow
-  public void testCreatingDomain(List namespaces) {  // parameter namespaces created with Annotation ITNamespaces
+  public void testCreatingDomain(@ITNamespaces(numofns = 1)List namespaces) {  // parameter namespaces created with Annotation ITNamespaces
 
     final String domainUID = "domain1";
 

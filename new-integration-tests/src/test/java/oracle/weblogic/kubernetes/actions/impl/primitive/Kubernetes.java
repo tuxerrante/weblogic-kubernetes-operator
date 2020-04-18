@@ -612,7 +612,6 @@ public class Kubernetes implements LoggedTest {
         return new DomainList();
       }
     } catch (Exception ex) {
-      ex.printStackTrace();
       return null;
     }
   }

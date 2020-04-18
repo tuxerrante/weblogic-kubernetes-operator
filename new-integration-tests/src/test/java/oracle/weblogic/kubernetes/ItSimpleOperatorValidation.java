@@ -60,7 +60,6 @@ import static org.awaitility.Awaitility.with;
 // by implementing the LoggedTest, we will automatically get a logger injected and it
 // will also automatically log entry/exit messages for each test method.
 @ExtendWith(IntegrationTestWatcher.class)
-@ITNamespaces(numofns = 3)
 class ItSimpleOperatorValidation implements LoggedTest {
 
   private HelmParams opHelmParams = null;
@@ -77,7 +76,7 @@ class ItSimpleOperatorValidation implements LoggedTest {
   // like these two:
   @Slow
   @MustNotRunInParallel
-  public void testInstallingOperator(List namespaces) {
+  public void testInstallingOperator(@ITNamespaces(numofns = 3)List namespaces) {
     // this first example is an operation that we wait for.
     // installOperator() is one of our custom, reusable actions.
     // imagine that installOperator() will try to install the operator, by creating
